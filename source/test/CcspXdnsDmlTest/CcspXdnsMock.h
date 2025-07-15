@@ -43,6 +43,7 @@
 #include <mocks/mock_base_api.h>
 #include <mocks/mock_trace.h>
 #include <mocks/mock_utopia.h>
+#include <mocks/mock_telemetry.h>
 #include <mocks/mock_rbus.h>
 #include <mocks/mock_file_io.h>
 #include <mocks/mock_socket.h>
@@ -67,6 +68,7 @@ extern FileIOMock *g_fileIOMock;
 extern SocketMock *g_socketMock;
 extern FileDescriptorMock *g_fdMock;
 extern LibnetMock *g_libnetMock;
+extern telemetryMock *g_telemetryMock;
 
 using namespace std;
 using std::experimental::filesystem::exists;
