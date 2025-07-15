@@ -19,7 +19,7 @@
 
 AM_CFLAGS = -D_ANSC_LINUX
 AM_CFLAGS += -D_ANSC_USER
-AM_CFLAGS += -fPIC -fno-exceptions -Os -Wall -Wextra
+AM_CFLAGS += -fPIC -fno-exceptions -O0 -Wall -Wextra
 
 AM_CXXFLAGS = -std=c++11
 
