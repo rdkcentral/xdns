@@ -71,7 +71,6 @@ CcspXdnsDmlTest_gtest_bin_LDADD = \
     $(HOME)/usr/local/lib/libmock_base64.la \
     $(HOME)/usr/local/lib/libmock_webconfigframework.la \
     $(HOME)/usr/local/lib/libmock_msgpack.la \
-    $(HOME)/usr/local/lib/libmock_telemetry.la \
     $(HOME)/usr/local/lib/libmock_sysevent.la \
     $(HOME)/usr/local/lib/libmock_utopia.la \
     $(HOME)/usr/local/lib/libmock_rbus.la \
