@@ -916,8 +916,6 @@ TEST_F(CcspXdnsCosaApisTestFixture, test_CosaDmlGetSelfHealCfg_CoreNet)
     PCOSA_DML_MAPPING_CONTAINER pMappingContainer = (PCOSA_DML_MAPPING_CONTAINER)malloc(sizeof(COSA_DML_MAPPING_CONTAINER));
     ASSERT_NE(pMappingContainer, nullptr);
     memset(pMappingContainer, 0, sizeof(COSA_DML_MAPPING_CONTAINER));
-    pMappingContainer->XDNSEntryCount = 0;
-    pMyObject->pMappingContainer = pMappingContainer;
 
     // Allocate and prepare a DNS entry
     PCOSA_DML_XDNS_MACDNS_MAPPING_ENTRY pDnsTableEntry = (PCOSA_DML_XDNS_MACDNS_MAPPING_ENTRY)malloc(sizeof(COSA_DML_XDNS_MACDNS_MAPPING_ENTRY));
@@ -928,66 +926,67 @@ TEST_F(CcspXdnsCosaApisTestFixture, test_CosaDmlGetSelfHealCfg_CoreNet)
     strcpy(pDnsTableEntry->DnsIPv6, "2001:558:feed::1");
     strcpy(pDnsTableEntry->Tag, "TestTag");
 
+    // Attach entry to the list
+    pMappingContainer->pXDNSEntryList = (PCOSA_DML_XDNS_MACDNS_MAPPING_ENTRY*)malloc(sizeof(PCOSA_DML_XDNS_MACDNS_MAPPING_ENTRY));
+    ASSERT_NE(pMappingContainer->pXDNSEntryList, nullptr);
+    pMappingContainer->pXDNSEntryList[0] = pDnsTableEntry;
+    pMappingContainer->XDNSEntryCount = 1;
+    pMyObject->pMappingContainer = pMappingContainer;
+
     // Prepare a valid FILE* using fmemopen
-    char dummy_file[] = "dnsoverride 00:00:00:00:00:00 75.75.75.75 2001:558:feed::1 empty\n";
-    FILE *fp_dnsmasq_conf = fmemopen(dummy_file, sizeof(dummy_file), "r");
+    char mockFileContent[] = "dnsoverride 00:00:00:00:00:00 75.75.75.75 2001:558:feed::1 empty\n";
+    FILE *fp_dnsmasq_conf = fmemopen(mockFileContent, strlen(mockFileContent), "r");
     ASSERT_NE(fp_dnsmasq_conf, nullptr);
 
-    // Mock: fopen
+    // Mocks
     EXPECT_CALL(*g_fopenMock, fopen_mock(_, _))
         .Times(1)
-        .WillOnce(testing::Return(fp_dnsmasq_conf));
+        .WillOnce(Return(fp_dnsmasq_conf));
 
-    // Mock: syscfg_get
-    EXPECT_CALL(*g_syscfgMock, syscfg_get(_, testing::StrEq("X_RDKCENTRAL-COM_XDNS"), _, _))
+    EXPECT_CALL(*g_syscfgMock, syscfg_get(_, StrEq("X_RDKCENTRAL-COM_XDNS"), _, _))
         .Times(1)
-        .WillOnce(testing::DoAll(
-            testing::SetArrayArgument<2>(buf, buf + sizeof(buf)),
-            testing::Return(0)
-        ));
+        .WillOnce(DoAll(testing::SetArrayArgument<2>(buf, buf + sizeof(buf)), Return(0)));
 
-    // Mock: fgets
     char str[] = "dnsoverride 00:00:00:00:00:00 75.75.75.75 2001:558:feed::1 empty";
+
     EXPECT_CALL(*g_fileIOMock, fgets(_, _, _))
         .Times(2)
         .WillOnce(testing::DoAll(
-            testing::Invoke([&](char* s, int, FILE*) {
-                strcpy(s, str);
-                return s;
-            }),
-            testing::Return(str)
+            testing::SetArrayArgument<0>(str, str + strlen(str) + 1),
+            Return(static_cast<char *>(str))
         ))
-        .WillOnce(testing::Return(nullptr));
+        .WillOnce(Return(static_cast<char *>(NULL)));
 
-    // Mock: strtok
+    char *tokenStr = (char *)malloc(64 * sizeof(char));
+    ASSERT_NE(tokenStr, nullptr);
+    memset(tokenStr, 0, 64);
+    strcpy(tokenStr, "dnsoverride 00:00:00:00:00:00 75.75.75.75");
+
     EXPECT_CALL(*g_safecLibMock, _strtok_s_chk(_, _, _, _, _))
         .Times(5)
-        .WillRepeatedly(testing::Invoke([](char* str, size_t, char* delim, char** context, int* err) {
-            // Use real strtok for simplicity
-            if (str) return strtok(str, delim);
-            else return strtok(nullptr, delim);
-        }));
+        .WillRepeatedly(Return(static_cast<char *>(tokenStr)));
 
-    // Mock: strcpy safe
     EXPECT_CALL(*g_safecLibMock, _strcpy_s_chk(_, _, _, _))
         .Times(3)
-        .WillRepeatedly(testing::Return(0));
+        .WillRepeatedly(Return(0));
 
-    // Mock: libnet rule_add
     EXPECT_CALL(*g_libnetMock, rule_add(_))
         .Times(2)
-        .WillRepeatedly(testing::Return(CNL_STATUS_SUCCESS));
+        .WillRepeatedly(Return(CNL_STATUS_SUCCESS));
 
-    // Mock: fclose
     EXPECT_CALL(*g_fileIOMock, fclose(_))
         .Times(1)
-        .WillOnce(testing::Return(0));
+        .WillOnce(Return(0));
 
-    // Actual test
+    // Test execution
+    printf("Before calling CosaDmlGetSelfHealCfg()\n");
     EXPECT_NE(CosaDmlGetSelfHealCfg(hThisObject), nullptr);
+    printf("After calling CosaDmlGetSelfHealCfg()\n");
 
     // Cleanup
     fclose(fp_dnsmasq_conf);
+    free(tokenStr);
+    free(pMappingContainer->pXDNSEntryList);
     free(pDnsTableEntry);
     free(pMappingContainer);
     free(pMyObject);
