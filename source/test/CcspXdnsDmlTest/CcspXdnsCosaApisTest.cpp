@@ -936,32 +936,33 @@ TEST_F(CcspXdnsCosaApisTestFixture, test_CosaDmlGetSelfHealCfg_CoreNet)
     // Mock: fopen
     EXPECT_CALL(*g_fopenMock, fopen_mock(_, _))
         .Times(1)
-        .WillOnce(Return(fp_dnsmasq_conf));
+        .WillOnce(testing::Return(fp_dnsmasq_conf));
 
     // Mock: syscfg_get
-    EXPECT_CALL(*g_syscfgMock, syscfg_get(_, StrEq("X_RDKCENTRAL-COM_XDNS"), _, _))
+    EXPECT_CALL(*g_syscfgMock, syscfg_get(_, testing::StrEq("X_RDKCENTRAL-COM_XDNS"), _, _))
         .Times(1)
-        .WillOnce(DoAll(SetArrayArgument<2>(buf, buf + sizeof(buf)), Return(0)));
+        .WillOnce(testing::DoAll(
+            testing::SetArrayArgument<2>(buf, buf + sizeof(buf)),
+            testing::Return(0)
+        ));
 
     // Mock: fgets
     char str[] = "dnsoverride 00:00:00:00:00:00 75.75.75.75 2001:558:feed::1 empty";
-    char str2[] = ""; // Second call returns NULL
     EXPECT_CALL(*g_fileIOMock, fgets(_, _, _))
         .Times(2)
-        .WillOnce(DoAll(
-            Invoke([&](char* s, int, FILE*) {
+        .WillOnce(testing::DoAll(
+            testing::Invoke([&](char* s, int, FILE*) {
                 strcpy(s, str);
                 return s;
             }),
-            Return(str)
+            testing::Return(str)
         ))
-        .WillOnce(Return(nullptr));
+        .WillOnce(testing::Return(nullptr));
 
     // Mock: strtok
-    // Simulate realistic tokenization
     EXPECT_CALL(*g_safecLibMock, _strtok_s_chk(_, _, _, _, _))
         .Times(5)
-        .WillRepeatedly(Invoke([](char* str, size_t, char* delim, char** context, int* err) {
+        .WillRepeatedly(testing::Invoke([](char* str, size_t, char* delim, char** context, int* err) {
             // Use real strtok for simplicity
             if (str) return strtok(str, delim);
             else return strtok(nullptr, delim);
@@ -970,17 +971,17 @@ TEST_F(CcspXdnsCosaApisTestFixture, test_CosaDmlGetSelfHealCfg_CoreNet)
     // Mock: strcpy safe
     EXPECT_CALL(*g_safecLibMock, _strcpy_s_chk(_, _, _, _))
         .Times(3)
-        .WillRepeatedly(Return(0));
+        .WillRepeatedly(testing::Return(0));
 
     // Mock: libnet rule_add
     EXPECT_CALL(*g_libnetMock, rule_add(_))
         .Times(2)
-        .WillRepeatedly(Return(CNL_STATUS_SUCCESS));
+        .WillRepeatedly(testing::Return(CNL_STATUS_SUCCESS));
 
     // Mock: fclose
     EXPECT_CALL(*g_fileIOMock, fclose(_))
         .Times(1)
-        .WillOnce(Return(0));
+        .WillOnce(testing::Return(0));
 
     // Actual test
     EXPECT_NE(CosaDmlGetSelfHealCfg(hThisObject), nullptr);
