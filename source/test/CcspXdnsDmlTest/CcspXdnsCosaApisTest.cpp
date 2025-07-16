@@ -899,46 +899,49 @@ TEST_F(CcspXdnsCosaApisTestFixture, test_CosaDmlGetSelfHealCfg_CoreNet)
     char buf[256] = {0};
     ANSC_HANDLE hThisObject = NULL;
 
-    // Allocate and initialize main object
+    // Allocate and initialize the main object
     PCOSA_DATAMODEL_XDNS pMyObject = (PCOSA_DATAMODEL_XDNS)malloc(sizeof(COSA_DATAMODEL_XDNS));
     ASSERT_NE(pMyObject, nullptr);
     memset(pMyObject, 0, sizeof(COSA_DATAMODEL_XDNS));
     hThisObject = (ANSC_HANDLE)pMyObject;
 
-    // Populate object fields
+    // Populate default DNS fields
     strcpy(pMyObject->DefaultDeviceDnsIPv4, "192.168.1.2");
     strcpy(pMyObject->DefaultDeviceDnsIPv6, "2001:0db8:85a3:0000:0000:8a2e:0370:7334");
     strcpy(pMyObject->DefaultSecondaryDeviceDnsIPv4, "192.168.1.2");
     strcpy(pMyObject->DefaultSecondaryDeviceDnsIPv6, "2001:0db8:85a3:0000:0000:8a2e:0370:7334");
     strcpy(pMyObject->DefaultDeviceTag, "TestTag");
 
-    // Allocate and attach mapping container
+    // Allocate and initialize mapping container
     PCOSA_DML_MAPPING_CONTAINER pMappingContainer = (PCOSA_DML_MAPPING_CONTAINER)malloc(sizeof(COSA_DML_MAPPING_CONTAINER));
     ASSERT_NE(pMappingContainer, nullptr);
     memset(pMappingContainer, 0, sizeof(COSA_DML_MAPPING_CONTAINER));
 
-    // Allocate and prepare a DNS entry
+    // Allocate and initialize a DNS table entry
     PCOSA_DML_XDNS_MACDNS_MAPPING_ENTRY pDnsTableEntry = (PCOSA_DML_XDNS_MACDNS_MAPPING_ENTRY)malloc(sizeof(COSA_DML_XDNS_MACDNS_MAPPING_ENTRY));
     ASSERT_NE(pDnsTableEntry, nullptr);
     memset(pDnsTableEntry, 0, sizeof(COSA_DML_XDNS_MACDNS_MAPPING_ENTRY));
+
     strcpy(pDnsTableEntry->MacAddress, "00:00:00:00:00:00");
     strcpy(pDnsTableEntry->DnsIPv4, "75.75.75.30");
     strcpy(pDnsTableEntry->DnsIPv6, "2001:558:feed::1");
     strcpy(pDnsTableEntry->Tag, "TestTag");
 
-    // Attach entry to the list
-    pMappingContainer->pXDNSEntryList = (PCOSA_DML_XDNS_MACDNS_MAPPING_ENTRY*)malloc(sizeof(PCOSA_DML_XDNS_MACDNS_MAPPING_ENTRY));
-    ASSERT_NE(pMappingContainer->pXDNSEntryList, nullptr);
-    pMappingContainer->pXDNSEntryList[0] = pDnsTableEntry;
+    // Attach the DNS table entry to the mapping container
+    pMappingContainer->pXDNSTable = (PCOSA_DML_XDNS_MACDNS_MAPPING_ENTRY)malloc(sizeof(COSA_DML_XDNS_MACDNS_MAPPING_ENTRY));
+    ASSERT_NE(pMappingContainer->pXDNSTable, nullptr);
+    memcpy(pMappingContainer->pXDNSTable, pDnsTableEntry, sizeof(COSA_DML_XDNS_MACDNS_MAPPING_ENTRY));
     pMappingContainer->XDNSEntryCount = 1;
+
+    // Attach container to main object
     pMyObject->pMappingContainer = pMappingContainer;
 
-    // Prepare a valid FILE* using fmemopen
+    // Mock FILE* using fmemopen
     char mockFileContent[] = "dnsoverride 00:00:00:00:00:00 75.75.75.75 2001:558:feed::1 empty\n";
     FILE *fp_dnsmasq_conf = fmemopen(mockFileContent, strlen(mockFileContent), "r");
     ASSERT_NE(fp_dnsmasq_conf, nullptr);
 
-    // Mocks
+    // Setup mocks
     EXPECT_CALL(*g_fopenMock, fopen_mock(_, _))
         .Times(1)
         .WillOnce(Return(fp_dnsmasq_conf));
@@ -957,7 +960,7 @@ TEST_F(CcspXdnsCosaApisTestFixture, test_CosaDmlGetSelfHealCfg_CoreNet)
         ))
         .WillOnce(Return(static_cast<char *>(NULL)));
 
-    char *tokenStr = (char *)malloc(64 * sizeof(char));
+    char *tokenStr = (char *)malloc(64);
     ASSERT_NE(tokenStr, nullptr);
     memset(tokenStr, 0, 64);
     strcpy(tokenStr, "dnsoverride 00:00:00:00:00:00 75.75.75.75");
@@ -978,15 +981,13 @@ TEST_F(CcspXdnsCosaApisTestFixture, test_CosaDmlGetSelfHealCfg_CoreNet)
         .Times(1)
         .WillOnce(Return(0));
 
-    // Test execution
-    printf("Before calling CosaDmlGetSelfHealCfg()\n");
+    // Run actual function
     EXPECT_NE(CosaDmlGetSelfHealCfg(hThisObject), nullptr);
-    printf("After calling CosaDmlGetSelfHealCfg()\n");
 
     // Cleanup
     fclose(fp_dnsmasq_conf);
     free(tokenStr);
-    free(pMappingContainer->pXDNSEntryList);
+    free(pMappingContainer->pXDNSTable);
     free(pDnsTableEntry);
     free(pMappingContainer);
     free(pMyObject);
