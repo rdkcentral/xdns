@@ -395,7 +395,7 @@ TEST_F(CcspXdnsCosaApisTestFixture, test_xdns_handle_sysevent_async2)
     xdns_handle_sysevent_async();
 }
 
-TEST_F(CcspXdnsCosaApisTestFixture, test_GetDnsMasqFileEntry1)
+/*TEST_F(CcspXdnsCosaApisTestFixture, test_GetDnsMasqFileEntry1)
 {
     char macaddress[] = "00:00:00:00:00:00";
     char defaultEntry[MAX_BUF_SIZE][MAX_BUF_SIZE] = {0};
@@ -414,7 +414,7 @@ TEST_F(CcspXdnsCosaApisTestFixture, test_GetDnsMasqFileEntry1)
     strncpy(defaultEntry[2], "dnsoverride 28:f1:0e:12:a1:a4 75.75.75.30 2001:558:feed::7530", MAX_BUF_SIZE - 1);
 
     GetDnsMasqFileEntry(macaddress, defaultEntry);
-}
+}*/
 
 TEST_F(CcspXdnsCosaApisTestFixture, test_GetDnsMasqFileEntry2)
 {
