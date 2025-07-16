@@ -905,11 +905,11 @@ TEST_F(CcspXdnsCosaApisTestFixture, test_CosaDmlGetSelfHealCfg_CoreNet)
     memset(pMyObject, 0, sizeof(COSA_DATAMODEL_XDNS));
     hThisObject = (ANSC_HANDLE)pMyObject;
 
-    // Populate default DNS fields
+    // Populate object fields
     strcpy(pMyObject->DefaultDeviceDnsIPv4, "192.168.1.2");
     strcpy(pMyObject->DefaultDeviceDnsIPv6, "2001:0db8:85a3:0000:0000:8a2e:0370:7334");
-    strcpy(pMyObject->DefaultSecondaryDeviceDnsIPv4, "192.168.1.2");
-    strcpy(pMyObject->DefaultSecondaryDeviceDnsIPv6, "2001:0db8:85a3:0000:0000:8a2e:0370:7334");
+    strcpy(pMyObject->DefaultSecondaryDeviceDnsIPv4, "192.168.1.3");
+    strcpy(pMyObject->DefaultSecondaryDeviceDnsIPv6, "2001:0db8:85a3:0000:0000:8a2e:0370:7335");
     strcpy(pMyObject->DefaultDeviceTag, "TestTag");
 
     // Allocate and initialize mapping container
@@ -927,7 +927,7 @@ TEST_F(CcspXdnsCosaApisTestFixture, test_CosaDmlGetSelfHealCfg_CoreNet)
     strcpy(pDnsTableEntry->DnsIPv6, "2001:558:feed::1");
     strcpy(pDnsTableEntry->Tag, "TestTag");
 
-    // Attach the DNS table entry to the mapping container
+    // Attach entry to the mapping container
     pMappingContainer->pXDNSTable = (PCOSA_DML_XDNS_MACDNS_MAPPING_ENTRY)malloc(sizeof(COSA_DML_XDNS_MACDNS_MAPPING_ENTRY));
     ASSERT_NE(pMappingContainer->pXDNSTable, nullptr);
     memcpy(pMappingContainer->pXDNSTable, pDnsTableEntry, sizeof(COSA_DML_XDNS_MACDNS_MAPPING_ENTRY));
@@ -936,7 +936,7 @@ TEST_F(CcspXdnsCosaApisTestFixture, test_CosaDmlGetSelfHealCfg_CoreNet)
     // Attach container to main object
     pMyObject->pMappingContainer = pMappingContainer;
 
-    // Mock FILE* using fmemopen
+    // Create mock FILE content
     char mockFileContent[] = "dnsoverride 00:00:00:00:00:00 75.75.75.75 2001:558:feed::1 empty\n";
     FILE *fp_dnsmasq_conf = fmemopen(mockFileContent, strlen(mockFileContent), "r");
     ASSERT_NE(fp_dnsmasq_conf, nullptr);
@@ -960,14 +960,19 @@ TEST_F(CcspXdnsCosaApisTestFixture, test_CosaDmlGetSelfHealCfg_CoreNet)
         ))
         .WillOnce(Return(static_cast<char *>(NULL)));
 
-    char *tokenStr = (char *)malloc(64);
-    ASSERT_NE(tokenStr, nullptr);
-    memset(tokenStr, 0, 64);
-    strcpy(tokenStr, "dnsoverride 00:00:00:00:00:00 75.75.75.75");
+    // Safe mock for token sequence
+    char token1[] = "dnsoverride";
+    char token2[] = "00:00:00:00:00:00";
+    char token3[] = "75.75.75.75";
+    char token4[] = "2001:558:feed::1";
+    char token5[] = "empty";
 
-    EXPECT_CALL(*g_safecLibMock, _strtok_s_chk(_, _, _, _, _))
-        .Times(5)
-        .WillRepeatedly(Return(static_cast<char *>(tokenStr)));
+    testing::Sequence seq;
+    EXPECT_CALL(*g_safecLibMock, _strtok_s_chk(_, _, _, _, _)).InSequence(seq).WillOnce(Return(token1));
+    EXPECT_CALL(*g_safecLibMock, _strtok_s_chk(_, _, _, _, _)).InSequence(seq).WillOnce(Return(token2));
+    EXPECT_CALL(*g_safecLibMock, _strtok_s_chk(_, _, _, _, _)).InSequence(seq).WillOnce(Return(token3));
+    EXPECT_CALL(*g_safecLibMock, _strtok_s_chk(_, _, _, _, _)).InSequence(seq).WillOnce(Return(token4));
+    EXPECT_CALL(*g_safecLibMock, _strtok_s_chk(_, _, _, _, _)).InSequence(seq).WillOnce(Return(token5));
 
     EXPECT_CALL(*g_safecLibMock, _strcpy_s_chk(_, _, _, _))
         .Times(3)
@@ -981,14 +986,15 @@ TEST_F(CcspXdnsCosaApisTestFixture, test_CosaDmlGetSelfHealCfg_CoreNet)
         .Times(1)
         .WillOnce(Return(0));
 
-    // Run actual function
+    // Run the function
+    printf("Before calling CosaDmlGetSelfHealCfg()\n");
     EXPECT_NE(CosaDmlGetSelfHealCfg(hThisObject), nullptr);
+    printf("After calling CosaDmlGetSelfHealCfg()\n");
 
     // Cleanup
     fclose(fp_dnsmasq_conf);
-    free(tokenStr);
-    free(pMappingContainer->pXDNSTable);
     free(pDnsTableEntry);
+    free(pMappingContainer->pXDNSTable);
     free(pMappingContainer);
     free(pMyObject);
 }
