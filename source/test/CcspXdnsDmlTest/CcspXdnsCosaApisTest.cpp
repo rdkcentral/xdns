@@ -403,22 +403,25 @@ TEST_F(CcspXdnsCosaApisTestFixture, test_GetDnsMasqFileEntry1)
     char dnsmasqConfEntry[256] = {0};
     errno_t rc = -1;
 
-    // Create in-memory file content
-    const char *mockFileContent = "dnsoverride 00:00:00:00:00:00 75.75.75.75 2001:558:feed::1";
-    FILE *fp1 = fmemopen((void *)mockFileContent, strlen(mockFileContent), "r");
-    ASSERT_NE(fp1, nullptr); // Ensure it worked
+    // Use mutable buffer for fmemopen
+    char mockFileContent[] = "dnsoverride 00:00:00:00:00:00 75.75.75.75 2001:558:feed::1";
+    FILE *fp1 = fmemopen(mockFileContent, strlen(mockFileContent), "r");
+    ASSERT_NE(fp1, nullptr);
 
     EXPECT_CALL(*g_fopenMock, fopen_mock(_, _))
         .Times(1)
-        .WillOnce(Return(fp1));  //  Now a real file
+        .WillOnce(Return(fp1));
 
+    // Set default DNS override entries
     strncpy(defaultEntry[0], "dnsoverride a6:83:e7:76:52:eb 75.75.75.30 2001:558:feed::7530", MAX_BUF_SIZE - 1);
     strncpy(defaultEntry[1], "dnsoverride a4:83:e7:76:52:eb 75.75.75.30 2001:558:feed::7530", MAX_BUF_SIZE - 1);
     strncpy(defaultEntry[2], "dnsoverride 28:f1:0e:12:a1:a4 75.75.75.30 2001:558:feed::7530", MAX_BUF_SIZE - 1);
 
+    // Call the function under test
     GetDnsMasqFileEntry(macaddress, defaultEntry);
 
-    fclose(fp1);  // Clean up
+    // Clean up the in-memory file
+    fclose(fp1);
 }
 
 TEST_F(CcspXdnsCosaApisTestFixture, test_GetDnsMasqFileEntry2)
