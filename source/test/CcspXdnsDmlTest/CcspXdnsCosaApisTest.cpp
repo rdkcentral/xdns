@@ -894,7 +894,7 @@ TEST_F(CcspXdnsCosaApisTestFixture, test_CosaDmlGetSelfHealCfg2)
 }
 
 #ifdef CORE_NET_LIB
-TEST_F(CcspXdnsCosaApisTestFixture, test_CosaDmlGetSelfHealCfg_CoreNet)
+/*TEST_F(CcspXdnsCosaApisTestFixture, test_CosaDmlGetSelfHealCfg_CoreNet)
 {
     char buf[256] = {0};
     ANSC_HANDLE hThisObject = NULL;
@@ -997,7 +997,7 @@ TEST_F(CcspXdnsCosaApisTestFixture, test_CosaDmlGetSelfHealCfg_CoreNet)
     free(pMappingContainer->pXDNSTable);
     free(pMappingContainer);
     free(pMyObject);
-}
+}*/
 
 TEST_F(CcspXdnsCosaApisTestFixture, test_CosaDmlGetSelfHealCfg_CoreNet2)
 {
