@@ -916,7 +916,7 @@ TEST_F(CcspXdnsCosaApisTestFixture, test_CosaDmlGetSelfHealCfg_CoreNet)
     memset(pMappingContainer, 0, sizeof(COSA_DML_MAPPING_CONTAINER));
 
     pMappingContainer->XDNSEntryCount = 0;
-    pMyObject->pDnsMappingContainer = pMappingContainer;  // Attach container
+    pMyObject->pMappingContainer = pMappingContainer;  // Attach container
 
     PCOSA_DML_XDNS_MACDNS_MAPPING_ENTRY pDnsTableEntry = (PCOSA_DML_XDNS_MACDNS_MAPPING_ENTRY)malloc(sizeof(COSA_DML_XDNS_MACDNS_MAPPING_ENTRY));
     ASSERT_NE(pDnsTableEntry, nullptr);
@@ -1112,7 +1112,7 @@ TEST_F(CcspXdnsCosaApisTestFixture, test_CosaDmlGetSelfHealCfg_CoreNet_Failure)
     ASSERT_NE(pMappingContainer, nullptr);
     memset(pMappingContainer, 0, sizeof(COSA_DML_MAPPING_CONTAINER));
     pMappingContainer->XDNSEntryCount = 0;
-    pMyObject->pDnsMappingContainer = pMappingContainer; // Important link!
+    pMyObject->pMappingContainer = pMappingContainer; // Important link!
 
     // Allocate a dummy DNS table entry (if needed)
     PCOSA_DML_XDNS_MACDNS_MAPPING_ENTRY pDnsTableEntry = (PCOSA_DML_XDNS_MACDNS_MAPPING_ENTRY)malloc(sizeof(COSA_DML_XDNS_MACDNS_MAPPING_ENTRY));
