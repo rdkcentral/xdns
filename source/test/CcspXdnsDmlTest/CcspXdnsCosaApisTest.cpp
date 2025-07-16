@@ -930,7 +930,7 @@ TEST_F(CcspXdnsCosaApisTestFixture, test_CosaDmlGetSelfHealCfg_CoreNet)
 
     // Prepare a valid FILE* using fmemopen
     char dummy_file[] = "dnsoverride 00:00:00:00:00:00 75.75.75.75 2001:558:feed::1 empty\n";
-    FILE *fp_dnsmasq_conf = fmemopen(dummy_file, strlen(dummy_file), "r");
+    FILE *fp_dnsmasq_conf = fmemopen(dummy_file, sizeof(dummy_file), "r");
     ASSERT_NE(fp_dnsmasq_conf, nullptr);
 
     // Mock: fopen
@@ -941,27 +941,31 @@ TEST_F(CcspXdnsCosaApisTestFixture, test_CosaDmlGetSelfHealCfg_CoreNet)
     // Mock: syscfg_get
     EXPECT_CALL(*g_syscfgMock, syscfg_get(_, StrEq("X_RDKCENTRAL-COM_XDNS"), _, _))
         .Times(1)
-        .WillOnce(DoAll(testing::SetArrayArgument<2>(buf, buf + sizeof(buf)), Return(0)));
+        .WillOnce(DoAll(SetArrayArgument<2>(buf, buf + sizeof(buf)), Return(0)));
 
     // Mock: fgets
     char str[] = "dnsoverride 00:00:00:00:00:00 75.75.75.75 2001:558:feed::1 empty";
+    char str2[] = ""; // Second call returns NULL
     EXPECT_CALL(*g_fileIOMock, fgets(_, _, _))
         .Times(2)
-        .WillOnce(testing::DoAll(
-            testing::SetArrayArgument<0>(str, str + strlen(str) + 1),
-            Return(static_cast<char *>(str))
+        .WillOnce(DoAll(
+            Invoke([&](char* s, int, FILE*) {
+                strcpy(s, str);
+                return s;
+            }),
+            Return(str)
         ))
-        .WillOnce(Return(static_cast<char *>(NULL)));
+        .WillOnce(Return(nullptr));
 
     // Mock: strtok
-    char *tokenStr = (char *)malloc(64 * sizeof(char));
-    ASSERT_NE(tokenStr, nullptr);
-    memset(tokenStr, 0, 64);
-    strcpy(tokenStr, "dnsoverride 00:00:00:00:00:00 75.75.75.75");
-
+    // Simulate realistic tokenization
     EXPECT_CALL(*g_safecLibMock, _strtok_s_chk(_, _, _, _, _))
         .Times(5)
-        .WillRepeatedly(Return(static_cast<char *>(tokenStr)));
+        .WillRepeatedly(Invoke([](char* str, size_t, char* delim, char** context, int* err) {
+            // Use real strtok for simplicity
+            if (str) return strtok(str, delim);
+            else return strtok(nullptr, delim);
+        }));
 
     // Mock: strcpy safe
     EXPECT_CALL(*g_safecLibMock, _strcpy_s_chk(_, _, _, _))
@@ -983,7 +987,6 @@ TEST_F(CcspXdnsCosaApisTestFixture, test_CosaDmlGetSelfHealCfg_CoreNet)
 
     // Cleanup
     fclose(fp_dnsmasq_conf);
-    free(tokenStr);
     free(pDnsTableEntry);
     free(pMappingContainer);
     free(pMyObject);
