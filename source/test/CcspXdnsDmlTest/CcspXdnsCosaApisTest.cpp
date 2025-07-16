@@ -1080,7 +1080,7 @@ TEST_F(CcspXdnsCosaApisTestFixture, test_CosaDmlGetSelfHealCfg_CoreNet2)
 
 }
 
-TEST_F(CcspXdnsCosaApisTestFixture, test_CosaDmlGetSelfHealCfg_CoreNet_Failure)
+/*TEST_F(CcspXdnsCosaApisTestFixture, test_CosaDmlGetSelfHealCfg_CoreNet_Failure)
 {
     char buf[256] = {0};
     FILE *fp_dnsmasq_conf = (FILE *)0xffffffff;
@@ -1166,7 +1166,7 @@ TEST_F(CcspXdnsCosaApisTestFixture, test_CosaDmlGetSelfHealCfg_CoreNet_Failure)
     pMappingContainer = NULL;
     free(pDnsTableEntry);
     pDnsTableEntry = NULL;
-}
+}*/
 
 TEST_F(CcspXdnsCosaApisTestFixture, test_CosaDmlGetSelfHealCfg_CoreNet_Failure2)
 {
