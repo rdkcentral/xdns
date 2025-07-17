@@ -19,7 +19,7 @@
 
 AM_CFLAGS = -D_ANSC_LINUX
 AM_CFLAGS += -D_ANSC_USER
-AM_CFLAGS += -fPIC -fno-exceptions -Os -Wall -Wextra
+AM_CFLAGS += -fPIC -fno-exceptions -O0 -Wall -Wextra
 
 AM_CXXFLAGS = -std=c++11
 
@@ -73,6 +73,7 @@ CcspXdnsDmlTest_gtest_bin_LDADD = \
     $(HOME)/usr/local/lib/libmock_msgpack.la \
     $(HOME)/usr/local/lib/libmock_sysevent.la \
     $(HOME)/usr/local/lib/libmock_utopia.la \
+    $(HOME)/usr/local/lib/libmock_telemetry.la \
     $(HOME)/usr/local/lib/libmock_rbus.la \
     $(HOME)/usr/local/lib/libmock_file_io.la \
     $(HOME)/usr/local/lib/libmock_socket.la \
