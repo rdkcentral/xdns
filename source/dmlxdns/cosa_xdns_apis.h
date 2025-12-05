@@ -20,7 +20,7 @@
 #include "cosa_apis.h"
 #include "dslh_definitions_tr143.h"
 
-#define RESOLV_CONF "/etc/resolv.conf"
+#define RESOLV_CONF "/nvram/resolv.conf"
 #define DNSMASQ_SERVERS_CONF "/nvram/dnsmasq_servers.conf"
 #define DNSMASQ_SERVERS_BAK "/nvram/dnsmasq_servers.bak"
 
