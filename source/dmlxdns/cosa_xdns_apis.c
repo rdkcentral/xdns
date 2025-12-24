@@ -105,6 +105,23 @@ extern ANSC_HANDLE bus_handle;
 
 void* MonitorResolvConfForChanges(void *arg);
 
+#if defined(_ONESTACK_PRODUCT_REQ_)
+#define BUFLEN_32 32
+static char partnerID[BUFLEN_32] = {0};
+
+bool is_bci_partner(void)
+{
+    if (partnerID[0] == '\0')
+    {
+        if (syscfg_get(NULL, "PartnerID", partnerID, sizeof(partnerID)) != 0)
+        {
+            return false;
+        }
+    }
+    return strcmp(partnerID, "comcast-business") == 0;
+}
+#endif // _ONESTACK_PRODUCT_REQ_
+
 STATIC void eventReceiveHandler(
     rbusHandle_t handle,
     rbusEvent_t const* event,
@@ -533,13 +550,19 @@ void RefreshResolvConfEntry()
 			continue;
 		}
 
-#if defined(_COSA_FOR_BCI_)
-
-            if ( strstr(resolvConfEntry, "XDNS_Multi_Profile"))
+#if defined(_COSA_FOR_BCI_) || defined(_ONESTACK_PRODUCT_REQ_)
+#if defined(_ONESTACK_PRODUCT_REQ_)
+            if (is_bci_partner())
+            {
+#endif // _ONESTACK_PRODUCT_REQ_
+                if (strstr(resolvConfEntry, "XDNS_Multi_Profile"))
                 {
-                        continue;
+                    continue;
                 }
-#endif
+#if defined(_ONESTACK_PRODUCT_REQ_)
+            }
+#endif // _ONESTACK_PRODUCT_REQ_
+#endif // _COSA_FOR_BCI_ || _ONESTACK_PRODUCT_REQ_
 
     	// write non dnsoverride entries to temp file
         fprintf(fp2, "%s", resolvConfEntry);
@@ -603,22 +626,27 @@ void RefreshResolvConfEntry()
     	fprintf(fp2, "%s", dnsmasqConfEntry);
     }
 
-#if defined(_COSA_FOR_BCI_)
-
-    char multiprofile_flag[5]={0};
-    syscfg_get(NULL, "MultiProfileXDNS", multiprofile_flag, sizeof(multiprofile_flag));
-    if( multiprofile_flag[0] == '1' &&  multiprofile_flag[1] == '\0')
-    {
-        fprintf(fp2, "XDNS_Multi_Profile Enabled\n");
-        fprintf(stderr,"## CcspXDNS #### Multi Profile XDNS feature is Enabled\n");
-    }
-    else
-    {
-        fprintf(fp2, "XDNS_Multi_Profile Disabled\n");
-        fprintf(stderr,"## CcspXDNS #### Multi Profile XDNS feature is disabled\n");
-    }
-
-#endif
+#if defined(_COSA_FOR_BCI_) || defined(_ONESTACK_PRODUCT_REQ_)
+#if defined(_ONESTACK_PRODUCT_REQ_)
+        if (is_bci_partner())
+        {
+#endif // _ONESTACK_PRODUCT_REQ_
+            char multiprofile_flag[5] = {0};
+            syscfg_get(NULL, "MultiProfileXDNS", multiprofile_flag, sizeof(multiprofile_flag));
+            if (multiprofile_flag[0] == '1' && multiprofile_flag[1] == '\0')
+            {
+                fprintf(fp2, "XDNS_Multi_Profile Enabled\n");
+                fprintf(stderr, "## CcspXDNS #### Multi Profile XDNS feature is Enabled\n");
+            }
+            else
+            {
+                fprintf(fp2, "XDNS_Multi_Profile Disabled\n");
+                fprintf(stderr, "## CcspXDNS #### Multi Profile XDNS feature is disabled\n");
+            }
+#if defined(_ONESTACK_PRODUCT_REQ_)
+        }
+#endif // _ONESTACK_PRODUCT_REQ_
+#endif // _COSA_FOR_BCI_ || _ONESTACK_PRODUCT_REQ_
 
     // at this point the temp file has entries from resolv.conf and dnsmasq_server.conf
     // close all files and reopen to read from temp and write to resolv.conf
@@ -1576,13 +1604,19 @@ int SetXdnsConfig()
                         continue;
                 }
 
-#if defined(_COSA_FOR_BCI_)
-
-            if ( strstr(confEntry, "XDNS_Multi_Profile"))
-                {
-                        continue;
-                }
-#endif
+#if defined(_COSA_FOR_BCI_) || defined(_ONESTACK_PRODUCT_REQ_)
+#if defined(_ONESTACK_PRODUCT_REQ_)
+        if (is_bci_partner())
+        {
+#endif // _ONESTACK_PRODUCT_REQ_
+            if (strstr(confEntry, "XDNS_Multi_Profile"))
+            {
+                continue;
+            }
+#if defined(_ONESTACK_PRODUCT_REQ_)
+        }
+#endif // _ONESTACK_PRODUCT_REQ_
+#endif // _COSA_FOR_BCI_ || _ONESTACK_PRODUCT_REQ_
 
         // write resolv.conf entries to temp file
                 printf("############ SetXdnsConfig() copy entry from resolv to temp: [%s]\n", confEntry);
@@ -1677,22 +1711,27 @@ int SetXdnsConfig()
                 }
         }
 
-#if defined(_COSA_FOR_BCI_)
-
-        char multiprofile_flag[5]={0};
+#if defined(_COSA_FOR_BCI_) || defined(_ONESTACK_PRODUCT_REQ_)
+#if defined(_ONESTACK_PRODUCT_REQ_)
+    if (is_bci_partner())
+    {
+#endif // _ONESTACK_PRODUCT_REQ_
+        char multiprofile_flag[5] = {0};
         syscfg_get(NULL, "MultiProfileXDNS", multiprofile_flag, sizeof(multiprofile_flag));
-        if( multiprofile_flag[0] == '1' &&  multiprofile_flag[1] == '\0')
+        if (multiprofile_flag[0] == '1' && multiprofile_flag[1] == '\0')
         {
             fprintf(fp3, "XDNS_Multi_Profile Enabled\n");
-            fprintf(stderr,"## CcspXDNS #### Multi Profile XDNS feature is Enabled\n");
+            fprintf(stderr, "## CcspXDNS #### Multi Profile XDNS feature is Enabled\n");
         }
         else
         {
             fprintf(fp3, "XDNS_Multi_Profile Disabled\n");
-            fprintf(stderr,"## CcspXDNS #### Multi Profile XDNS feature is disabled\n");
+            fprintf(stderr, "## CcspXDNS #### Multi Profile XDNS feature is disabled\n");
         }
-
-#endif
+#if defined(_ONESTACK_PRODUCT_REQ_)
+    }
+#endif // _ONESTACK_PRODUCT_REQ_
+#endif // _COSA_FOR_BCI_ || _ONESTACK_PRODUCT_REQ_
 
         fclose(fp3); fp3 = NULL;
         fclose(fp2); fp2 = NULL;
@@ -1801,13 +1840,19 @@ int UnsetXdnsConfig()
                         continue; //skip
                 }
 
-#if defined(_COSA_FOR_BCI_)
-
-            if ( strstr(confEntry, "XDNS_Multi_Profile"))
-                {
-                        continue;
-                }
-#endif
+#if defined(_COSA_FOR_BCI_) || defined(_ONESTACK_PRODUCT_REQ_)
+#if defined(_ONESTACK_PRODUCT_REQ_)
+        if (is_bci_partner())
+        {
+#endif // _ONESTACK_PRODUCT_REQ_
+            if (strstr(confEntry, "XDNS_Multi_Profile"))
+            {
+                continue;
+            }
+#if defined(_ONESTACK_PRODUCT_REQ_)
+        }
+#endif // _ONESTACK_PRODUCT_REQ_
+#endif // _COSA_FOR_BCI_ || _ONESTACK_PRODUCT_REQ_
 
                 printf("############ UnsetXdnsConfig() saving from resolv.conf to bak [%s]\n", confEntry);
                 fprintf(fp3, "%s", confEntry);

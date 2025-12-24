@@ -631,16 +631,23 @@ int apply_XDNS_cache_ToDB(xdns_cache *tmp_xdns_cache)
         	}
         	else
         	{
-#ifdef _CBR_PRODUCT_REQ_
-                	if (syscfg_set(NULL, "XDNS_DNSSecEnable", setval) != 0)
-                	{
-				fprintf(stderr, "%s syscfg_set XDNS_DNSSecEnable failed %d !!!\n",__FUNCTION__,tmp_xdns_cache->XdnsEnable);
-                	}
-                	else
-                	{
-                        	fprintf(stderr, "%s XDNS_DNSSecEnable value is set to %d in DB\n",__FUNCTION__,tmp_xdns_cache->XdnsEnable);
-               		}
-#endif        
+#if defined(_CBR_PRODUCT_REQ_) || defined(_ONESTACK_PRODUCT_REQ_)
+#if defined(_ONESTACK_PRODUCT_REQ_)
+            if (is_bci_partner())
+            {
+#endif // _ONESTACK_PRODUCT_REQ_
+                if (syscfg_set(NULL, "XDNS_DNSSecEnable", setval) != 0)
+                {
+                    fprintf(stderr, "%s syscfg_set XDNS_DNSSecEnable failed %d !!!\n", __FUNCTION__, tmp_xdns_cache->XdnsEnable);
+                }
+                else
+                {
+                    fprintf(stderr, "%s XDNS_DNSSecEnable value is set to %d in DB\n", __FUNCTION__, tmp_xdns_cache->XdnsEnable);
+                }
+#if defined(_ONESTACK_PRODUCT_REQ_)
+            }
+#endif // _ONESTACK_PRODUCT_REQ_
+#endif // _CBR_PRODUCT_REQ_ || _ONESTACK_PRODUCT_REQ_
                 	if (syscfg_commit() != 0)
                 	{
 				fprintf(stderr, "%s syscfg_commit X_RDKCENTRAL-COM_XDNS failed!!!\n",__FUNCTION__);
@@ -684,20 +691,26 @@ int set_xdns_conf(xdnsdoc_t *xd, xdns_cache *tmp_xdns_cache)
                 return 1;
             }
 	}
-#if !defined(_COSA_FOR_BCI_)
-        else if( ( !strncmp(xd->default_ipv4, USE_RDK_DEFAULT_STRING, sizeof(USE_RDK_DEFAULT_STRING) ) && ( INVALID_IP != CheckIfIpIsValid(xd->default_ipv6)) ) ||
-                 ( (INVALID_IP != CheckIfIpIsValid(xd->default_ipv4)) && (!strncmp(xd->default_ipv6, USE_RDK_DEFAULT_STRING, sizeof(USE_RDK_DEFAULT_STRING))) ) ||
-                 ( (!strncmp(xd->default_ipv4, USE_RDK_DEFAULT_STRING, sizeof(USE_RDK_DEFAULT_STRING))) && (!strncmp(xd->default_ipv6, USE_RDK_DEFAULT_STRING, sizeof(USE_RDK_DEFAULT_STRING))) )
-               )
+#if !defined(_COSA_FOR_BCI_) || defined(_ONESTACK_PRODUCT_REQ_)
+#if defined(_ONESTACK_PRODUCT_REQ_)
+    else if (!is_bci_partner() &&
+             ((!strncmp(xd->default_ipv4, USE_RDK_DEFAULT_STRING, sizeof(USE_RDK_DEFAULT_STRING)) && (INVALID_IP != CheckIfIpIsValid(xd->default_ipv6))) ||
+              ((INVALID_IP != CheckIfIpIsValid(xd->default_ipv4)) && (!strncmp(xd->default_ipv6, USE_RDK_DEFAULT_STRING, sizeof(USE_RDK_DEFAULT_STRING)))) ||
+              ((!strncmp(xd->default_ipv4, USE_RDK_DEFAULT_STRING, sizeof(USE_RDK_DEFAULT_STRING))) && (!strncmp(xd->default_ipv6, USE_RDK_DEFAULT_STRING, sizeof(USE_RDK_DEFAULT_STRING))))))
+#else  // _ONESTACK_PRODUCT_REQ_
+    else if ((!strncmp(xd->default_ipv4, USE_RDK_DEFAULT_STRING, sizeof(USE_RDK_DEFAULT_STRING)) && (INVALID_IP != CheckIfIpIsValid(xd->default_ipv6))) ||
+             ((INVALID_IP != CheckIfIpIsValid(xd->default_ipv4)) && (!strncmp(xd->default_ipv6, USE_RDK_DEFAULT_STRING, sizeof(USE_RDK_DEFAULT_STRING)))) ||
+             ((!strncmp(xd->default_ipv4, USE_RDK_DEFAULT_STRING, sizeof(USE_RDK_DEFAULT_STRING))) && (!strncmp(xd->default_ipv6, USE_RDK_DEFAULT_STRING, sizeof(USE_RDK_DEFAULT_STRING)))))
+#endif // _ONESTACK_PRODUCT_REQ_
+    {
+        ret = xdns_read_load_dns_ip(xd->default_ipv4, xd->default_ipv6, tmp_xdns_cache->DefaultDeviceDnsIPv4, tmp_xdns_cache->DefaultDeviceDnsIPv6);
+        if (0 != ret)
         {
-                ret = xdns_read_load_dns_ip(xd->default_ipv4, xd->default_ipv6, tmp_xdns_cache->DefaultDeviceDnsIPv4, tmp_xdns_cache->DefaultDeviceDnsIPv6);
-                if ( 0 != ret )
-                {
-                    CcspTraceError(("%d:%s !!!Unable to check router mode and get the device primary dns ip address from resolv.conf\n", __LINE__, __FUNCTION__));
-                    return ret;
-                }
+            CcspTraceError(("%d:%s !!!Unable to check router mode and get the device primary dns ip address from resolv.conf\n", __LINE__, __FUNCTION__));
+            return ret;
         }
-#endif
+    }
+#endif // !_COSA_FOR_BCI_ || _ONESTACK_PRODUCT_REQ_
 	else
 	{
 		fprintf(stderr,"%s INVALID_IP XDNS Default IP\n",__FUNCTION__);
@@ -765,20 +778,27 @@ int set_xdns_conf(xdnsdoc_t *xd, xdns_cache *tmp_xdns_cache)
                     return 1;
                 }
         	}
-#if defined(_COSA_FOR_BCI_)
-                else if( ( !strncmp(xd->table_param->entries[i].dns_ipv4, USE_RDK_DEFAULT_STRING, sizeof(USE_RDK_DEFAULT_STRING) ) && ( INVALID_IP != CheckIfIpIsValid(xd->table_param->entries[i].dns_ipv6)) ) ||
-                         ( (INVALID_IP != CheckIfIpIsValid(xd->table_param->entries[i].dns_ipv4)) && (!strncmp(xd->table_param->entries[i].dns_ipv6, USE_RDK_DEFAULT_STRING, sizeof(USE_RDK_DEFAULT_STRING))) ) ||
-                         ( (!strncmp(xd->table_param->entries[i].dns_ipv4, USE_RDK_DEFAULT_STRING, sizeof(USE_RDK_DEFAULT_STRING))) && (!strncmp(xd->table_param->entries[i].dns_ipv6, USE_RDK_DEFAULT_STRING, sizeof(USE_RDK_DEFAULT_STRING))) )
-                       )
-                {
-                      ret = xdns_read_load_dns_ip(xd->table_param->entries[i].dns_ipv4, xd->table_param->entries[i].dns_ipv6, tmp_xdns_cache->XDNSTableList[i].DnsIPv4, tmp_xdns_cache->XDNSTableList[i].DnsIPv6);
-                      if ( 0 != ret )
-                      {
-                          CcspTraceError(("%d:%s !!!Unable to check router mode and get the client dns ip address from resolv.conf\n", __LINE__, __FUNCTION__));
-                          return ret;
-                      }
-                }
-#endif
+#if defined(_COSA_FOR_BCI_) || defined(_ONESTACK_PRODUCT_REQ_)
+#if defined(_ONESTACK_PRODUCT_REQ_)
+        else if (is_bci_partner() &&
+                 ((!strncmp(xd->table_param->entries[i].dns_ipv4, USE_RDK_DEFAULT_STRING, sizeof(USE_RDK_DEFAULT_STRING)) && (INVALID_IP != CheckIfIpIsValid(xd->table_param->entries[i].dns_ipv6))) ||
+                  ((INVALID_IP != CheckIfIpIsValid(xd->table_param->entries[i].dns_ipv4)) && (!strncmp(xd->table_param->entries[i].dns_ipv6, USE_RDK_DEFAULT_STRING, sizeof(USE_RDK_DEFAULT_STRING)))) ||
+                  ((!strncmp(xd->table_param->entries[i].dns_ipv4, USE_RDK_DEFAULT_STRING, sizeof(USE_RDK_DEFAULT_STRING))) && (!strncmp(xd->table_param->entries[i].dns_ipv6, USE_RDK_DEFAULT_STRING, sizeof(USE_RDK_DEFAULT_STRING))))))
+#else  // _ONESTACK_PRODUCT_REQ_
+        else if (
+            (!strncmp(xd->table_param->entries[i].dns_ipv4, USE_RDK_DEFAULT_STRING, sizeof(USE_RDK_DEFAULT_STRING)) && (INVALID_IP != CheckIfIpIsValid(xd->table_param->entries[i].dns_ipv6))) ||
+            ((INVALID_IP != CheckIfIpIsValid(xd->table_param->entries[i].dns_ipv4)) && (!strncmp(xd->table_param->entries[i].dns_ipv6, USE_RDK_DEFAULT_STRING, sizeof(USE_RDK_DEFAULT_STRING)))) ||
+            ((!strncmp(xd->table_param->entries[i].dns_ipv4, USE_RDK_DEFAULT_STRING, sizeof(USE_RDK_DEFAULT_STRING))) && (!strncmp(xd->table_param->entries[i].dns_ipv6, USE_RDK_DEFAULT_STRING, sizeof(USE_RDK_DEFAULT_STRING)))))
+#endif // _ONESTACK_PRODUCT_REQ_
+        {
+            ret = xdns_read_load_dns_ip(xd->table_param->entries[i].dns_ipv4, xd->table_param->entries[i].dns_ipv6, tmp_xdns_cache->XDNSTableList[i].DnsIPv4, tmp_xdns_cache->XDNSTableList[i].DnsIPv6);
+            if (0 != ret)
+            {
+                CcspTraceError(("%d:%s !!!Unable to check router mode and get the client dns ip address from resolv.conf\n", __LINE__, __FUNCTION__));
+                return ret;
+            }
+        }
+#endif // _COSA_FOR_BCI_ || _ONESTACK_PRODUCT_REQ_
         	else
         	{
                 	fprintf(stderr,"%s INVALID_IP XDNS Default IP\n",__FUNCTION__);
