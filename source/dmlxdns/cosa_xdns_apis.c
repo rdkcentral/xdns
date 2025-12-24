@@ -105,6 +105,21 @@ extern ANSC_HANDLE bus_handle;
 
 void* MonitorResolvConfForChanges(void *arg);
 
+#if defined(_ONESTACK_PRODUCT_REQ_)
+#define BUFLEN_32 32
+static char partnerID[BUFLEN_32] = {0};
+
+bool is_bci_partner(void)
+{
+    if (partnerID[0] == '\0') {
+        if (syscfg_get(NULL, "PartnerID", partnerID, sizeof(partnerID)) != 0) {
+            return false;
+        }
+    }
+    return strcmp(partnerID, "comcast-business") == 0;
+}
+#endif // _ONESTACK_PRODUCT_REQ_
+
 STATIC void eventReceiveHandler(
     rbusHandle_t handle,
     rbusEvent_t const* event,
@@ -442,24 +457,24 @@ void GetDnsMasqFileEntry(char* macaddress, char (*defaultEntry)[MAX_BUF_SIZE])
     while(fgets(dnsmasqConfEntry, sizeof(dnsmasqConfEntry), fp1) != NULL)
     {
         if(strstr(dnsmasqConfEntry, macaddress) != NULL)
+        {
+            char *pDnsmasqConfEntry = dnsmasqConfEntry;
+            rc = strcpy_s(defaultEntry[count], MAX_BUF_SIZE , pDnsmasqConfEntry);
+            if(rc != EOK)
             {
-               char *pDnsmasqConfEntry = dnsmasqConfEntry;
-               rc = strcpy_s(defaultEntry[count], MAX_BUF_SIZE , pDnsmasqConfEntry);
-               if(rc != EOK)
-               {
-                   ERR_CHK(rc);
-                   fclose(fp1);
-                   return;
-               }
-          	if(count==MAX_XDNS_SERV)
-                {
-                  	break;
-                }
-          	else
-          	{
-                	count++;
-          	}
+                ERR_CHK(rc);
+                fclose(fp1);
+                return;
             }
+            if(count==MAX_XDNS_SERV)
+            {
+                break;
+            }
+            else
+            {
+                count++;
+            }
+        }
     }
 
     fclose(fp1);
@@ -470,188 +485,193 @@ void GetDnsMasqFileEntry(char* macaddress, char (*defaultEntry)[MAX_BUF_SIZE])
 
 void RefreshResolvConfEntry()
 {
-	//0. Determine if XDNS is ON, if only ON then copy entries to RESOLV_CONF from DNSMASQ_SERVERS_CONF :
-	//1. read non-dnsoverride entries from RESOLV_CONF and write to temp file
-	//2. read dnsoverride entries from DNSMASQ_SERVERS_CONF and write to temp file
-	//3. clear resolv.conf and write all entries from temp file to RESOLV_CONF
-         errno_t                         rc1          = -1;
+    //0. Determine if XDNS is ON, if only ON then copy entries to RESOLV_CONF from DNSMASQ_SERVERS_CONF :
+    //1. read non-dnsoverride entries from RESOLV_CONF and write to temp file
+    //2. read dnsoverride entries from DNSMASQ_SERVERS_CONF and write to temp file
+    //3. clear resolv.conf and write all entries from temp file to RESOLV_CONF
+    errno_t rc1 = -1;
 
-	char xdnsflag[20] = {0};
-	int rc = syscfg_get(NULL, "X_RDKCENTRAL-COM_XDNS", xdnsflag, sizeof(xdnsflag));
-	if (0 != rc || '\0' == xdnsflag[0] ) //if flag not found
-	{
-		printf("### XDNS - Never enabled. CcspXDNS Not writing to RESOLV_CONF ### \n");
-	}
-        else if((xdnsflag[0] == '0') && xdnsflag[1] == '\0') //flag set to false
-        {
-                printf("### XDNS - Disabled. CcspXDNS Not writing to RESOLV_CONF  ###\n");
-        }
-        else if((xdnsflag[0] == '1') && xdnsflag[1] == '\0') //if xDNS set to true
-        {        
-
-    printf("### XDNS flag is enabled. CcspXDNS is syncing config to RESOLV_CONF  ###\n");
-    t2_event_d("SYS_INFO_XDNS_RESOLV_CONF_SYNC", 1);
-    char dnsmasqConfEntry[256] = {0};
-    char resolvConfEntry[256] = {0};
-
-    unlink(DNSMASQ_SERVERS_BAK);
-
-    //Open text files and check that they open//
-    FILE *fp1 = NULL, *fp2 = NULL, *fp3 = NULL;
-
-    fp1 = fopen(RESOLV_CONF,"r");
-    if(fp1 == NULL)
-	{
-		fprintf(stderr,"## CcspXDNS fopen(RESOLV_CONF, 'r') Error !!\n");
-		return;
-    }
-
-    fp2 = fopen(DNSMASQ_SERVERS_BAK ,"a");
-    if(fp2 == NULL)
-	{
-		fprintf(stderr,"## CcspXDNS fopen(DNSMASQ_SERVERS_BAK, 'a') Error !!\n");
-		fclose(fp1);
-		return;
-	}
-
-    fp3 = fopen(DNSMASQ_SERVERS_CONF,"r");
-    if(fp3 == NULL)
-	{
-		fprintf(stderr,"## CcspXDNS fopen(DNSMASQ_SERVERS_CONF, 'r') Error !!\n");
-		fclose(fp1);
-		fclose(fp2);
-		return;
-	}
-
-
-    //Get entries (other than dnsoverride) from resolv.conf file//
-
-    while(fgets(resolvConfEntry, sizeof(resolvConfEntry), fp1) !=NULL)
+    char xdnsflag[20] = {0};
+    int rc = syscfg_get(NULL, "X_RDKCENTRAL-COM_XDNS", xdnsflag, sizeof(xdnsflag));
+    if (0 != rc || '\0' == xdnsflag[0] ) //if flag not found
     {
-   	    if ( strstr(resolvConfEntry, "dnsoverride"))
-		{
-			continue;
-		}
+        printf("### XDNS - Never enabled. CcspXDNS Not writing to RESOLV_CONF ### \n");
+    }
+    else if((xdnsflag[0] == '0') && xdnsflag[1] == '\0') //flag set to false
+    {
+        printf("### XDNS - Disabled. CcspXDNS Not writing to RESOLV_CONF  ###\n");
+    }
+    else if((xdnsflag[0] == '1') && xdnsflag[1] == '\0') //if xDNS set to true
+    {
+        printf("### XDNS flag is enabled. CcspXDNS is syncing config to RESOLV_CONF  ###\n");
+        t2_event_d("SYS_INFO_XDNS_RESOLV_CONF_SYNC", 1);
+        char dnsmasqConfEntry[256] = {0};
+        char resolvConfEntry[256] = {0};
 
-#if defined(_COSA_FOR_BCI_)
+        unlink(DNSMASQ_SERVERS_BAK);
 
-            if ( strstr(resolvConfEntry, "XDNS_Multi_Profile"))
-                {
+        //Open text files and check that they open//
+        FILE *fp1 = NULL, *fp2 = NULL, *fp3 = NULL;
+
+        fp1 = fopen(RESOLV_CONF,"r");
+        if(fp1 == NULL)
+        {
+            fprintf(stderr,"## CcspXDNS fopen(RESOLV_CONF, 'r') Error !!\n");
+            return;
+        }
+
+        fp2 = fopen(DNSMASQ_SERVERS_BAK ,"a");
+        if(fp2 == NULL)
+        {
+            fprintf(stderr,"## CcspXDNS fopen(DNSMASQ_SERVERS_BAK, 'a') Error !!\n");
+            fclose(fp1);
+            return;
+        }
+
+        fp3 = fopen(DNSMASQ_SERVERS_CONF,"r");
+        if(fp3 == NULL)
+        {
+            fprintf(stderr,"## CcspXDNS fopen(DNSMASQ_SERVERS_CONF, 'r') Error !!\n");
+            fclose(fp1);
+            fclose(fp2);
+            return;
+        }
+
+        //Get entries (other than dnsoverride) from resolv.conf file//
+
+        while(fgets(resolvConfEntry, sizeof(resolvConfEntry), fp1) !=NULL)
+        {
+            if ( strstr(resolvConfEntry, "dnsoverride"))
+            {
+                continue;
+            }
+
+#if defined(_COSA_FOR_BCI_) || defined(_ONESTACK_PRODUCT_REQ_)
+#if defined(_ONESTACK_PRODUCT_REQ_)
+            if (is_bci_partner()) {
+#endif // _ONESTACK_PRODUCT_REQ_
+                if ( strstr(resolvConfEntry, "XDNS_Multi_Profile"))
+                    {
                         continue;
-                }
-#endif
+                    }
+#if defined(_ONESTACK_PRODUCT_REQ_)
+            }
+#endif // _ONESTACK_PRODUCT_REQ_
+#endif // _COSA_FOR_BCI_ || _ONESTACK_PRODUCT_REQ_
 
-    	// write non dnsoverride entries to temp file
-        fprintf(fp2, "%s", resolvConfEntry);
-    }
-
-    // Get dnsoverride entries from dnsmasq_servers.conf file
-    while(fgets(dnsmasqConfEntry, sizeof(dnsmasqConfEntry), fp3) != NULL)
-    {
-    	if ( !strstr(dnsmasqConfEntry, "dnsoverride"))
-    	{
-    		continue;
-    	}
-
-    	char tempEntry[256] = {0};
-	char *pDnsmasqConfEntry = dnsmasqConfEntry;
-	rc1 = strcpy_s(tempEntry, sizeof(tempEntry),pDnsmasqConfEntry);
-        if(rc1 != EOK)
-        {
-            ERR_CHK(rc1);
-            continue;
+            // write non dnsoverride entries to temp file
+            fprintf(fp2, "%s", resolvConfEntry);
         }
-    	//validate
-        char *ptr = NULL, *tok= NULL;
-        size_t len = 0;
-        len = strlen(tempEntry);
-        tok= strtok_s(tempEntry, &len ," \t\n\r", &ptr);
-	if((!tok) || (!len ))
-	continue;
+
+        // Get dnsoverride entries from dnsmasq_servers.conf file
+        while(fgets(dnsmasqConfEntry, sizeof(dnsmasqConfEntry), fp3) != NULL)
+        {
+            if ( !strstr(dnsmasqConfEntry, "dnsoverride"))
+            {
+                continue;
+            }
+
+            char tempEntry[256] = {0};
+            char *pDnsmasqConfEntry = dnsmasqConfEntry;
+            rc1 = strcpy_s(tempEntry, sizeof(tempEntry),pDnsmasqConfEntry);
+            if(rc1 != EOK)
+            {
+                ERR_CHK(rc1);
+                continue;
+            }
+            //validate
+            char *ptr = NULL, *tok= NULL;
+            size_t len = 0;
+            len = strlen(tempEntry);
+            tok= strtok_s(tempEntry, &len ," \t\n\r", &ptr);
+            if((!tok) || (!len ))
+                continue;
   
-    	char *macaddr = NULL, *srvaddr4 = NULL;
+            char *macaddr = NULL, *srvaddr4 = NULL;
 #ifdef FEATURE_IPV6
-    	char *srvaddr6 = NULL;
+            char *srvaddr6 = NULL;
 #endif
 
-        macaddr = strtok_s(NULL, &len, " \t\n\r", &ptr);
-        if((!macaddr) || (!len ))
-        continue;
+            macaddr = strtok_s(NULL, &len, " \t\n\r", &ptr);
+            if((!macaddr) || (!len ))
+                continue;
 
-        srvaddr4 =  strtok_s(NULL, &len, " \t\n\r", &ptr);
-        if(!srvaddr4)
-        continue;
+            srvaddr4 =  strtok_s(NULL, &len, " \t\n\r", &ptr);
+            if(!srvaddr4)
+                continue;
 
-    	struct sockaddr_in sa;
-    	if (inet_pton(AF_INET, srvaddr4, &(sa.sin_addr)) != 1)
-    		continue;
+            struct sockaddr_in sa;
+            if (inet_pton(AF_INET, srvaddr4, &(sa.sin_addr)) != 1)
+                continue;
 
 #ifdef FEATURE_IPV6
-        if(!len)
-        continue;
+            if(!len)
+                continue;
 
-        srvaddr6 =  strtok_s(NULL, &len, " \t\n\r", &ptr);
-        if(!srvaddr6)
-        continue;
+            srvaddr6 =  strtok_s(NULL, &len, " \t\n\r", &ptr);
+            if(!srvaddr6)
+                continue;
 
-    	struct sockaddr_in6 sa6;
-    	if (inet_pton(AF_INET6, srvaddr6, &(sa6.sin6_addr)) != 1)
-    		continue;
+            struct sockaddr_in6 sa6;
+            if (inet_pton(AF_INET6, srvaddr6, &(sa6.sin6_addr)) != 1)
+                continue;
 #endif
 
-    	// write valid dnsoverride entries to tmp file
-    	fprintf(fp2, "%s", dnsmasqConfEntry);
+            // write valid dnsoverride entries to tmp file
+            fprintf(fp2, "%s", dnsmasqConfEntry);
+        }
+
+#if defined(_COSA_FOR_BCI_) || defined(_ONESTACK_PRODUCT_REQ_)
+#if defined(_ONESTACK_PRODUCT_REQ_)
+        if (is_bci_partner()) {
+#endif // _ONESTACK_PRODUCT_REQ_
+            char multiprofile_flag[5]={0};
+            syscfg_get(NULL, "MultiProfileXDNS", multiprofile_flag, sizeof(multiprofile_flag));
+            if( multiprofile_flag[0] == '1' &&  multiprofile_flag[1] == '\0')
+            {
+                fprintf(fp2, "XDNS_Multi_Profile Enabled\n");
+                fprintf(stderr,"## CcspXDNS #### Multi Profile XDNS feature is Enabled\n");
+            }
+            else
+            {
+                fprintf(fp2, "XDNS_Multi_Profile Disabled\n");
+                fprintf(stderr,"## CcspXDNS #### Multi Profile XDNS feature is disabled\n");
+            }
+#if defined(_ONESTACK_PRODUCT_REQ_)
+        }
+#endif // _ONESTACK_PRODUCT_REQ_
+#endif // _COSA_FOR_BCI_ || _ONESTACK_PRODUCT_REQ_
+
+        // at this point the temp file has entries from resolv.conf and dnsmasq_server.conf
+        // close all files and reopen to read from temp and write to resolv.conf
+        fclose(fp1); fp1 = NULL;
+        fclose(fp2); fp2 = NULL;
+        fclose(fp3); fp3 = NULL;
+
+        fp1 = fopen(RESOLV_CONF,"w");
+        if(fp1 == NULL)
+        {
+            fprintf(stderr,"## CcspXDNS fopen(RESOLV_CONF, 'w') Error !!\n");
+            return;
+        }
+
+        fp2 = fopen(DNSMASQ_SERVERS_BAK ,"r");
+        if(fp2 == NULL)
+        {
+            fprintf(stderr,"## CcspXDNS fopen(DNSMASQ_SERVERS_BAK, 'r') Error !!\n");
+            fclose(fp1);
+            return;
+        }
+
+        //copy entries from temp file to resolv.conf file//
+        while(fgets(resolvConfEntry, sizeof(resolvConfEntry), fp2) != NULL)
+        {
+            // write to resolv.conf file
+            fprintf(fp1, "%s", resolvConfEntry);
+        }
+        fclose(fp1); fp1 = NULL;
+        fclose(fp2); fp2 = NULL;
     }
-
-#if defined(_COSA_FOR_BCI_)
-
-    char multiprofile_flag[5]={0};
-    syscfg_get(NULL, "MultiProfileXDNS", multiprofile_flag, sizeof(multiprofile_flag));
-    if( multiprofile_flag[0] == '1' &&  multiprofile_flag[1] == '\0')
-    {
-        fprintf(fp2, "XDNS_Multi_Profile Enabled\n");
-        fprintf(stderr,"## CcspXDNS #### Multi Profile XDNS feature is Enabled\n");
-    }
-    else
-    {
-        fprintf(fp2, "XDNS_Multi_Profile Disabled\n");
-        fprintf(stderr,"## CcspXDNS #### Multi Profile XDNS feature is disabled\n");
-    }
-
-#endif
-
-    // at this point the temp file has entries from resolv.conf and dnsmasq_server.conf
-    // close all files and reopen to read from temp and write to resolv.conf
-    fclose(fp1); fp1 = NULL;
-    fclose(fp2); fp2 = NULL;
-    fclose(fp3); fp3 = NULL;
-
-    fp1 = fopen(RESOLV_CONF,"w");
-    if(fp1 == NULL)
-	{
-		fprintf(stderr,"## CcspXDNS fopen(RESOLV_CONF, 'w') Error !!\n");
-		return;
-	}
-
-    fp2 = fopen(DNSMASQ_SERVERS_BAK ,"r");
-    if(fp2 == NULL)
-	{
-		fprintf(stderr,"## CcspXDNS fopen(DNSMASQ_SERVERS_BAK, 'r') Error !!\n");
-		fclose(fp1);
-		return;
-	}
-
-    //copy entries from temp file to resolv.conf file//
-	while(fgets(resolvConfEntry, sizeof(resolvConfEntry), fp2) != NULL)
-	{
-		// write to resolv.conf file
-		fprintf(fp1, "%s", resolvConfEntry);
-	}
-
-    fclose(fp1); fp1 = NULL;
-    fclose(fp2); fp2 = NULL;
-
-	}
     return;
 }
 
@@ -750,7 +770,7 @@ void* MonitorResolvConfForChanges(void *arg)
 void ReplaceDnsmasqConfEntry(char* macaddress, char (*overrideEntry)[MAX_BUF_SIZE], int count)
 {
     char dnsmasqConfEntry[256] = {0};
-	//pthread_mutex_lock(&dnsmasqMutex);
+    //pthread_mutex_lock(&dnsmasqMutex);
 
     if(!macaddress || !strlen(macaddress) || !overrideEntry)
     {
@@ -788,14 +808,14 @@ void ReplaceDnsmasqConfEntry(char* macaddress, char (*overrideEntry)[MAX_BUF_SIZ
     if(fp2 == NULL)
     {
         fprintf(stderr,"\nReplaceDnsmasqConfEntry() - Error reading file %s\n", DNSMASQ_SERVERS_BAK);
-	fclose(fp1);
+        fclose(fp1);
         return;
     }
 
     //Step 2: Get text from original file//
     while(fgets(dnsmasqConfEntry, sizeof(dnsmasqConfEntry), fp1) != NULL)
     {
-    	// skip entry that match the mac addr, copy the rest to BAK
+        // skip entry that match the mac addr, copy the rest to BAK
         if(strstr(dnsmasqConfEntry, macaddress) != NULL)
             {
                 continue;
@@ -819,10 +839,10 @@ void ReplaceDnsmasqConfEntry(char* macaddress, char (*overrideEntry)[MAX_BUF_SIZ
         fprintf(stderr,"Error in renaming  file\n");
         
 
-	// update to resolv.conf file
+    // update to resolv.conf file
     RefreshResolvConfEntry();
 
-	return;
+    return;
 }
 
 void AppendDnsmasqConfEntry(char (*string1)[MAX_BUF_SIZE], int count)
@@ -840,11 +860,11 @@ void AppendDnsmasqConfEntry(char (*string1)[MAX_BUF_SIZE], int count)
      
     for(i=0; i< count;i++)
     {
-    	fprintf(fp2, "%s", string1[i]);
+        fprintf(fp2, "%s", string1[i]);
     }
     fclose(fp2);
 
-	return;
+    return;
 }
 
 // Create Default dnsoverride entry (00:00:00:00:00:00) using nameserver entries from resolv.conf file
@@ -861,75 +881,74 @@ void CreateDnsmasqServerConf(PCOSA_DATAMODEL_XDNS pMyObject)
     int foundIPv6 = 0;
     errno_t rc = -1;
 
-	//Step 1: Open RESOLV_CONF //
-	FILE *fp1 = NULL;
-    fp1 = fopen(RESOLV_CONF,"r");
+    //Step 1: Open RESOLV_CONF //
+    FILE *fp1 = NULL;
+    fp1 = fopen(RESOLV_CONF, "r");
     if(fp1 == NULL)
     {
-		fprintf(stderr,"\nCreateDnsmasqServerConf() Error opening file %s \n", RESOLV_CONF);
+        fprintf(stderr,"\nCreateDnsmasqServerConf() Error opening file %s \n", RESOLV_CONF);
         return;
     }
-	//Step 2: scan RESOLV_CONF for primary and secondary IPv4 & IPv6 nameserver entries. We will use this to create default dnsoverride entry//
-	while(fgets(resolvConfEntry, sizeof(resolvConfEntry), fp1) != NULL)
-   {
+    //Step 2: scan RESOLV_CONF for primary and secondary IPv4 & IPv6 nameserver entries. We will use this to create default dnsoverride entry//
+    while(fgets(resolvConfEntry, sizeof(resolvConfEntry), fp1) != NULL)
+    {
         if(strstr(resolvConfEntry, "nameserver") != NULL)
-                {
-		char *pResolvConfEntry = resolvConfEntry;
-		rc = strcpy_s(buf,sizeof(buf),pResolvConfEntry);
+        {
+            char *pResolvConfEntry = resolvConfEntry;
+            rc = strcpy_s(buf,sizeof(buf),pResolvConfEntry);
+            if(rc != EOK)
+            {
+                ERR_CHK(rc);
+                continue;
+            }
+            fprintf(stderr, "%s CcspXDNS resolv.conf nameserver entry: %s\n", __FUNCTION__, buf);
+
+            char *newline = strchr( buf, '\n' );
+            if ( newline )
+                *newline = 0;
+            size_t len = 0;
+            len =strlen(buf);
+            char *ptr = NULL;
+            token = strtok_s(buf, &len, s,&ptr);
+            if((!token) || (!len))
+            {
+                continue;
+            }
+
+            token = strtok_s(NULL, &len, s,&ptr); // token after nameserver : ipv4 or v6 addr
+            if(!token)
+            {
+                continue;
+            }
+
+            if(!foundIPv4 && strstr(token, "."))
+            {
+                foundIPv4 = 1;
+                rc = strcpy_s(tokenIPv4,sizeof(tokenIPv4),token);
                 if(rc != EOK)
                 {
                     ERR_CHK(rc);
                     continue;
                 }
-          	fprintf(stderr, "%s CcspXDNS resolv.conf nameserver entry: %s\n", __FUNCTION__, buf);
+            }
 
-                char *newline = strchr( buf, '\n' );
-                if ( newline )
-                    *newline = 0;
-                         size_t len = 0;
-                         len =strlen(buf);
-                         char *ptr = NULL;
-                          token = strtok_s(buf, &len, s,&ptr);
-                          if((!token) || (!len))
-                          {
-                              continue;
-                          }
-
-                         token = strtok_s(NULL, &len, s,&ptr); // token after nameserver : ipv4 or v6 addr
-                         if(!token)
-                         {
-                             continue;
-                         }
-
-                if(!foundIPv4 && strstr(token, "."))
+            if(!foundIPv6 && strstr(token, ":"))
+            {
+                foundIPv6 = 1;
+                rc = strcpy_s(tokenIPv6,sizeof(tokenIPv6),token);
+                if(rc != EOK)
                 {
-                        foundIPv4 = 1;
-			rc = strcpy_s(tokenIPv4,sizeof(tokenIPv4),token);
-                        if(rc != EOK)
-                        {
-                            ERR_CHK(rc);
-                            continue;
-                        }
-
+                    ERR_CHK(rc);
+                    continue;
                 }
-
-                if(!foundIPv6 && strstr(token, ":"))
-                {
-                        foundIPv6 = 1;
-			rc = strcpy_s(tokenIPv6,sizeof(tokenIPv6),token);
-                        if(rc != EOK)
-                        {
-                            ERR_CHK(rc);
-                            continue;
-                        }
-                }
-                }
+            }
+        }
     }
 
     fclose(fp1);
   
-        //intilalization of Default XDNS parametrs to NULL
-	//store values read from resolv.conf to TR181 object, could be empty
+    //intilalization of Default XDNS parametrs to NULL
+    //store values read from resolv.conf to TR181 object, could be empty
     char *pTokenIPv6 = tokenIPv6;
     char *pTokenIPv4 = tokenIPv4;
    if(!(isValidIPv4Address(pMyObject->DefaultDeviceDnsIPv4))){
@@ -972,27 +991,27 @@ void CreateDnsmasqServerConf(PCOSA_DATAMODEL_XDNS pMyObject)
     }
     }
 #ifndef FEATURE_IPV6
-	/* IPv4 ONLY MODE : Create xDNS default dnsoverride entry */
-	if(strlen(pMyObject->DefaultDeviceDnsIPv4))
-	{
-	snprintf(dnsmasqConfOverrideEntry[0], 256, "dnsoverride 00:00:00:00:00:00 %s %s\n", pMyObject->DefaultDeviceDnsIPv4, pMyObject->DefaultDeviceTag);
-	AppendDnsmasqConfEntry(dnsmasqConfOverrideEntry,1); //only primary XDNS has default. secondary is NULL so giving 1 for append
-	}
+    /* IPv4 ONLY MODE : Create xDNS default dnsoverride entry */
+    if(strlen(pMyObject->DefaultDeviceDnsIPv4))
+    {
+        snprintf(dnsmasqConfOverrideEntry[0], 256, "dnsoverride 00:00:00:00:00:00 %s %s\n", pMyObject->DefaultDeviceDnsIPv4, pMyObject->DefaultDeviceTag);
+        AppendDnsmasqConfEntry(dnsmasqConfOverrideEntry,1); //only primary XDNS has default. secondary is NULL so giving 1 for append
+    }
 #else
-	/* Create xDNS default dnsoverride entry by reading both IPv4 and IPv6 */
-	if(strlen(pMyObject->DefaultDeviceDnsIPv4) && strlen(pMyObject->DefaultDeviceDnsIPv6))
-        {
-            rc = sprintf_s(dnsmasqConfOverrideEntry[0], 256, "dnsoverride 00:00:00:00:00:00 %s %s %s\n", pMyObject->DefaultDeviceDnsIPv4, pMyObject->DefaultDeviceDnsIPv6, pMyObject->DefaultDeviceTag);
-	    if(rc < EOK) {
-		ERR_CHK(rc);
-            }
-	//else if(foundIPv4)	// !foundIPv6
-	//	snprintf(dnsmasqConfOverrideEntry, 256, "dnsoverride 00:00:00:00:00:00 %s %s %s\n", tokenIPv4, "::", pMyObject->DefaultDeviceTag);
-	//else if(foundIPv6)	// !foundIPv4
-	//	snprintf(dnsmasqConfOverrideEntry, 256, "dnsoverride 00:00:00:00:00:00 %s %s %s\n", "0.0.0.0", tokenIPv6, pMyObject->DefaultDeviceTag);
-      }	
-      else // both entries not found in resolv.conf, we cannot create default dnsoverride.
-		return;
+    /* Create xDNS default dnsoverride entry by reading both IPv4 and IPv6 */
+    if(strlen(pMyObject->DefaultDeviceDnsIPv4) && strlen(pMyObject->DefaultDeviceDnsIPv6))
+    {
+        rc = sprintf_s(dnsmasqConfOverrideEntry[0], 256, "dnsoverride 00:00:00:00:00:00 %s %s %s\n", pMyObject->DefaultDeviceDnsIPv4, pMyObject->DefaultDeviceDnsIPv6, pMyObject->DefaultDeviceTag);
+        if(rc < EOK) {
+            ERR_CHK(rc);
+        }
+    //else if(foundIPv4)    // !foundIPv6
+    //  snprintf(dnsmasqConfOverrideEntry, 256, "dnsoverride 00:00:00:00:00:00 %s %s %s\n", tokenIPv4, "::", pMyObject->DefaultDeviceTag);
+    //else if(foundIPv6)    // !foundIPv4
+    //  snprintf(dnsmasqConfOverrideEntry, 256, "dnsoverride 00:00:00:00:00:00 %s %s %s\n", "0.0.0.0", tokenIPv6, pMyObject->DefaultDeviceTag);
+    }
+    else // both entries not found in resolv.conf, we cannot create default dnsoverride.
+        return;
 
     AppendDnsmasqConfEntry(dnsmasqConfOverrideEntry,1); //only primary XDNS has default. secondary is NULL so giving 1 for append
 #endif
@@ -1000,12 +1019,12 @@ void CreateDnsmasqServerConf(PCOSA_DATAMODEL_XDNS pMyObject)
     //update entries to resolv.conf
     RefreshResolvConfEntry();
 
-	return;
+    return;
 }
 
 void FillEntryInList(PCOSA_DATAMODEL_XDNS pXdns, PCOSA_DML_XDNS_MACDNS_MAPPING_ENTRY dnsTableEntry)
 {
-	PCOSA_CONTEXT_XDNS_LINK_OBJECT   pXdnsCxtLink = NULL;
+    PCOSA_CONTEXT_XDNS_LINK_OBJECT   pXdnsCxtLink = NULL;
 
     pXdnsCxtLink = (PCOSA_CONTEXT_XDNS_LINK_OBJECT)AnscAllocateMemory(sizeof(COSA_CONTEXT_XDNS_LINK_OBJECT));
     if ( !pXdnsCxtLink )
@@ -1014,13 +1033,12 @@ void FillEntryInList(PCOSA_DATAMODEL_XDNS pXdns, PCOSA_DML_XDNS_MACDNS_MAPPING_E
         return;
     }
 
-	pXdnsCxtLink->InstanceNumber =  pXdns->ulXDNSNextInstanceNumber;
+    pXdnsCxtLink->InstanceNumber =  pXdns->ulXDNSNextInstanceNumber;
     dnsTableEntry->InstanceNumber =  pXdns->ulXDNSNextInstanceNumber;
-	pXdns->ulXDNSNextInstanceNumber++;
+    pXdns->ulXDNSNextInstanceNumber++;
 
-	pXdnsCxtLink->hContext = (ANSC_HANDLE)dnsTableEntry;
-	CosaSListPushEntryByInsNum(&pXdns->XDNSDeviceList, (PCOSA_CONTEXT_LINK_OBJECT)pXdnsCxtLink); 
-
+    pXdnsCxtLink->hContext = (ANSC_HANDLE)dnsTableEntry;
+    CosaSListPushEntryByInsNum(&pXdns->XDNSDeviceList, (PCOSA_CONTEXT_LINK_OBJECT)pXdnsCxtLink); 
 }
 
 
@@ -1029,29 +1047,29 @@ CosaDmlGetSelfHealCfg(
         ANSC_HANDLE                 hThisObject
     )
 {
-	PCOSA_DATAMODEL_XDNS      pMyObject            = (PCOSA_DATAMODEL_XDNS)hThisObject;
-	PCOSA_DML_MAPPING_CONTAINER    pMappingContainer            = (PCOSA_DML_MAPPING_CONTAINER)NULL;
+    PCOSA_DATAMODEL_XDNS      pMyObject            = (PCOSA_DATAMODEL_XDNS)hThisObject;
+    PCOSA_DML_MAPPING_CONTAINER    pMappingContainer            = (PCOSA_DML_MAPPING_CONTAINER)NULL;
     char buf[256] = {0};
-	char stub[64];
-	FILE* fp_dnsmasq_conf = NULL;
-	int ret = 0;
-	int index = 0;
-        errno_t rc     = -1;
+    char stub[64];
+    FILE* fp_dnsmasq_conf = NULL;
+    int ret = 0;
+    int index = 0;
+    errno_t rc     = -1;
     PCOSA_DML_XDNS_MACDNS_MAPPING_ENTRY pDnsTableEntry = NULL;
 
-	pMappingContainer = (PCOSA_DML_MAPPING_CONTAINER)AnscAllocateMemory(sizeof(COSA_DML_MAPPING_CONTAINER));
+    pMappingContainer = (PCOSA_DML_MAPPING_CONTAINER)AnscAllocateMemory(sizeof(COSA_DML_MAPPING_CONTAINER));
 
     //pthread_mutex_lock(&dnsmasqMutex);
 
-    /* MURUGAN - below logic is to add ip rule for each dns upstream server */
-  	printf("CosaDmlGetSelfHealCfg: Calling logic to add ip rule for each dns upstream server");
-        int Secondaryipv4count=0;
-	int Secondaryipv6count=0;
+    /* below logic is to add ip rule for each dns upstream server */
+    printf("CosaDmlGetSelfHealCfg: Calling logic to add ip rule for each dns upstream server");
+    int Secondaryipv4count=0;
+    int Secondaryipv6count=0;
 
     if ( (fp_dnsmasq_conf=fopen(DNSMASQ_SERVERS_CONF, "r")) != NULL )
     {
-	printf("CosaDmlGetSelfHealCfg: Calling RefreshResolvConfEntry");
-	RefreshResolvConfEntry();
+        printf("CosaDmlGetSelfHealCfg: Calling RefreshResolvConfEntry");
+        RefreshResolvConfEntry();
         while ( fgets(buf, sizeof(buf), fp_dnsmasq_conf)!= NULL )
         {
             char *newline = strchr( buf, '\n' );
@@ -1091,8 +1109,8 @@ CosaDmlGetSelfHealCfg(
                     snprintf(iprulebuf, 256, "from all to %s lookup erouter", token);
                     
                     if(Secondaryipv4count)
-		    {
-			rc = strcpy_s(pMyObject->DefaultSecondaryDeviceDnsIPv4, sizeof(pMyObject->DefaultSecondaryDeviceDnsIPv4),token);
+                    {
+                        rc = strcpy_s(pMyObject->DefaultSecondaryDeviceDnsIPv4, sizeof(pMyObject->DefaultSecondaryDeviceDnsIPv4),token);
                         if(rc != EOK)
                         {
                             ERR_CHK(rc);
@@ -1100,16 +1118,16 @@ CosaDmlGetSelfHealCfg(
                         }
 
                     }
-		    else
+                    else
                     {
-			rc = strcpy_s(pMyObject->DefaultDeviceDnsIPv4, sizeof(pMyObject->DefaultDeviceDnsIPv4),token);
+                        rc = strcpy_s(pMyObject->DefaultDeviceDnsIPv4, sizeof(pMyObject->DefaultDeviceDnsIPv4),token);
                         if(rc != EOK)
                         {
                             ERR_CHK(rc);
                             continue;
                         }
-			Secondaryipv4count=1;
-		    }
+                        Secondaryipv4count=1;
+                    }
                     if(v_secure_system("ip -4 rule show | grep '%s' | grep -v grep >/dev/null", iprulebuf) != 0)
                     {
 #ifdef CORE_NET_LIB
@@ -1143,25 +1161,24 @@ CosaDmlGetSelfHealCfg(
                     snprintf(iprulebuf, 256, "from all to %s lookup erouter", token);
                      
                     if(Secondaryipv6count)
-		    {
-			rc = strcpy_s(pMyObject->DefaultSecondaryDeviceDnsIPv6, sizeof(pMyObject->DefaultSecondaryDeviceDnsIPv6),token);
+                    {
+                        rc = strcpy_s(pMyObject->DefaultSecondaryDeviceDnsIPv6, sizeof(pMyObject->DefaultSecondaryDeviceDnsIPv6),token);
                         if(rc != EOK)
                         {
                             ERR_CHK(rc);
                             continue;
                         }
-
-		    }
-		    else
-		    {
-			rc = strcpy_s(pMyObject->DefaultDeviceDnsIPv6, sizeof(pMyObject->DefaultDeviceDnsIPv6),token);
+                    }
+                    else
+                    {
+                        rc = strcpy_s(pMyObject->DefaultDeviceDnsIPv6, sizeof(pMyObject->DefaultDeviceDnsIPv6),token);
                         if(rc != EOK)
                         {
                             ERR_CHK(rc);
                             continue;
                         }
-			Secondaryipv6count=1;
-		    }
+                        Secondaryipv6count=1;
+                    }
 
                     if(v_secure_system("ip -6 rule show | grep '%s' | grep -v grep >/dev/null", iprulebuf) != 0)
                     {
@@ -1207,7 +1224,7 @@ CosaDmlGetSelfHealCfg(
             {
                 CcspTraceWarning(("%s resource allocation failed\n",__FUNCTION__));
                 fclose(fp_dnsmasq_conf);
-		fp_dnsmasq_conf = NULL;
+                fp_dnsmasq_conf = NULL;
                 unlink(DNSMASQ_SERVERS_CONF);
                 break;
             }
@@ -1243,9 +1260,9 @@ CosaDmlGetSelfHealCfg(
             {
                     char iprulebuf[256] = {0};
                     rc = sprintf_s(iprulebuf, 256, "from all to %s lookup erouter", pDnsTableEntry->DnsIPv4);
-		    if(rc < EOK) {
-			ERR_CHK(rc);
-		    }
+                    if(rc < EOK) {
+                        ERR_CHK(rc);
+                    }
 
                     if(v_secure_system("ip -4 rule show | grep '%s' | grep -v grep >/dev/null", iprulebuf) != 0)
                     {
@@ -1268,9 +1285,9 @@ CosaDmlGetSelfHealCfg(
     #ifdef FEATURE_IPV6
 
                     rc = sprintf_s(iprulebuf, 256, "from all to %s lookup erouter", pDnsTableEntry->DnsIPv6);
-		    if(rc < EOK) {
-			 ERR_CHK(rc);
-		    }
+                    if(rc < EOK) {
+                        ERR_CHK(rc);
+                    }
 
                     if(v_secure_system("ip -6 rule show | grep '%s' | grep -v grep >/dev/null", iprulebuf) != 0)
                     {
@@ -1306,17 +1323,17 @@ CosaDmlGetSelfHealCfg(
     }
     if(pMappingContainer != NULL)
     {
-	    pMappingContainer->XDNSEntryCount = index;
-	    printf("CosaDmlGetSelfHealCfg XDNSEntryCount %d\n", index);
+        pMappingContainer->XDNSEntryCount = index;
+        printf("CosaDmlGetSelfHealCfg XDNSEntryCount %d\n", index);
     }
 
     if(fp_dnsmasq_conf) {
-	fclose(fp_dnsmasq_conf);
+        fclose(fp_dnsmasq_conf);
     }
 
     //pthread_mutex_unlock(&dnsmasqMutex);
 
-	return pMappingContainer;
+    return pMappingContainer;
 }
 
 /**********************************************************************
@@ -1536,149 +1553,156 @@ CosaXDNSRemove
 //        return 0 - for any error.
 int SetXdnsConfig()
 {
-        char confEntry[256] = {0};
-        char tempEntry[256] = {0};
-	errno_t                         rc1          = -1;
+    char confEntry[256] = {0};
+    char tempEntry[256] = {0};
+    errno_t rc1         = -1;
 
-        FILE *fp1 = NULL, *fp2 = NULL, *fp3 = NULL;
+    FILE *fp1 = NULL, *fp2 = NULL, *fp3 = NULL;
 
-        fp1 = fopen(RESOLV_CONF, "r"); // r mode - file must exist
-        if(fp1 == NULL)
-        {
-                fprintf(stderr,"## XDNS : SetXdnsConfig() - fopen(XDNS_RESOLV_CONF, 'r') Error !!\n");
-                return 0; // If resolv.conf does not exist return return fail.
-        }
+    fp1 = fopen(RESOLV_CONF, "r"); // r mode - file must exist
+    if(fp1 == NULL)
+    {
+        fprintf(stderr,"## XDNS : SetXdnsConfig() - fopen(XDNS_RESOLV_CONF, 'r') Error !!\n");
+        return 0; // if resolv.conf does not exist return return fail.
+    }
 
-        fp2 = fopen(DNSMASQ_SERVERS_CONF ,"r");
-        if(fp2 == NULL)
-        {
-                fprintf(stderr,"## XDNS : SetXdnsConfig() - fopen(XDNS_DNSMASQ_SERVERS_CONF, 'r') Error !!\n");
-                fclose(fp1); fp1 = NULL;
-                return 0; //if dnsmasq_servers doesnt exist, return fail.
-        }
+    fp2 = fopen(DNSMASQ_SERVERS_CONF ,"r");
+    if(fp2 == NULL)
+    {
+        fprintf(stderr,"## XDNS : SetXdnsConfig() - fopen(XDNS_DNSMASQ_SERVERS_CONF, 'r') Error !!\n");
+        fclose(fp1);
+        fp1 = NULL;
+        return 0; // if dnsmasq_servers doesn't exist, return fail.
+    }
 
-        unlink(DNSMASQ_SERVERS_BAK);
+    unlink(DNSMASQ_SERVERS_BAK);
 
-        fp3 = fopen(DNSMASQ_SERVERS_BAK ,"a");
-        if(fp3 == NULL)
-        {
-                fprintf(stderr,"## XDNS : SetXdnsConfig() - fopen(XDNS_DNSMASQ_SERVERS_BAK, 'a') Error !!\n");
-                fclose(fp2); fp2 = NULL;
-                fclose(fp1); fp1 = NULL;
-                return 0;
-        }
+    fp3 = fopen(DNSMASQ_SERVERS_BAK, "a");
+    if(fp3 == NULL)
+    {
+        fprintf(stderr,"## XDNS : SetXdnsConfig() - fopen(XDNS_DNSMASQ_SERVERS_BAK, 'a') Error !!\n");
+        fclose(fp2);
+        fp2 = NULL;
+        fclose(fp1);
+        fp1 = NULL;
+        return 0;
+    }
 
     //Get all entries (other than dnsoverride) from resolv.conf file//
     while(fgets(confEntry, sizeof(confEntry), fp1) != NULL)
     {
-            if ( strstr(confEntry, "dnsoverride"))
-                {
-                        continue;
-                }
-
-#if defined(_COSA_FOR_BCI_)
-
+        if ( strstr(confEntry, "dnsoverride"))
+        {
+            continue;
+        }
+#if defined(_COSA_FOR_BCI_) || defined(_ONESTACK_PRODUCT_REQ_)
+#if defined(_ONESTACK_PRODUCT_REQ_)
+        if (is_bci_partner()) {
+#endif // _ONESTACK_PRODUCT_REQ_
             if ( strstr(confEntry, "XDNS_Multi_Profile"))
                 {
-                        continue;
+                    continue;
                 }
-#endif
+#if defined(_ONESTACK_PRODUCT_REQ_)
+        }
+#endif // _ONESTACK_PRODUCT_REQ_
+#endif // _COSA_FOR_BCI_ || _ONESTACK_PRODUCT_REQ_
 
         // write resolv.conf entries to temp file
-                printf("############ SetXdnsConfig() copy entry from resolv to temp: [%s]\n", confEntry);
+        printf("############ SetXdnsConfig() copy entry from resolv to temp: [%s]\n", confEntry);
         fprintf(fp3, "%s", confEntry);
     }
 
-        // Get dnsoverride entries from dnsmasq_servers file. Validate IPs.
-        // Look for default entry.
-        int founddefault = 0;
-        while(fgets(confEntry, sizeof(confEntry), fp2) != NULL)
+    // Get dnsoverride entries from dnsmasq_servers file. Validate IPs.
+    // Look for default entry.
+    int founddefault = 0;
+    while(fgets(confEntry, sizeof(confEntry), fp2) != NULL)
+    {
+        //validate dnsoverride tokens
+        // cleanup invalid entries in nvram leftover from ipv4 only stack and previous formats.
+        char *pConfEntry = confEntry;
+        rc1 = strcpy_s(tempEntry, sizeof(tempEntry),pConfEntry);
+        if(rc1 != EOK)
         {
-                //validate dnsoverride tokens
-                // cleanup invalid entries in nvram leftover from ipv4 only stack and previous formats.
-        	char *pConfEntry = confEntry;
-        	rc1 = strcpy_s(tempEntry, sizeof(tempEntry),pConfEntry);
-        	if(rc1 != EOK)
-        	{
-            		ERR_CHK(rc1);
-            		continue;
-        	}
-                int gotdefault = 0;
-
-                char *token = strtok(tempEntry, " \t\n\r");
-
-                if(token && strcmp(token, "dnsoverride") == 0)
-                {
-                        char *macaddr = NULL, *srvaddr4 = NULL;
-#ifdef FEATURE_IPV6
-                        char *srvaddr6 = NULL;
-#endif
-                        if(!(macaddr = strtok(NULL, " \t\n\r")))
-                        {
-                                printf("############ SetXdnsConfig() mac check failed!\n");
-                                continue;
-                        }
-                        else
-                        {
-                                // check if default
-                                if(strcmp(macaddr, "00:00:00:00:00:00") == 0)
-                                        gotdefault = 1;
-                        }
-
-                        if(!(srvaddr4 = strtok(NULL, " \t\n\r")))
-                        {
-                                printf("############ SetXdnsConfig() addr4 failed!\n");
-                                continue;
-                        }
-
-                        struct sockaddr_in sa;
-                        if (inet_pton(AF_INET, srvaddr4, &(sa.sin_addr)) != 1)
-                        {
-                                printf("############ SetXdnsConfig() addr4 check failed!: %s\n", srvaddr4);
-                                continue;
-                        }
-
-#ifdef FEATURE_IPV6
-                        if(!(srvaddr6 = strtok(NULL, " \t\n\r")))
-                        {
-                                printf("############ SetXdnsConfig() addr6 failed!\n");
-                                continue;
-                        }
-
-                        struct sockaddr_in6 sa6;
-                        if (inet_pton(AF_INET6, srvaddr6, &(sa6.sin6_addr)) != 1)
-                        {
-                                printf("############ SetXdnsConfig() addr6 check failed!: %s\n", srvaddr6);
-                                continue;
-                        }
-#endif
-
-                        if(gotdefault)
-                        {
-                                founddefault++;
-                                if(founddefault==1)
-                                {
-					fprintf(stderr, "%s Enabling primary XDNS: %s\n",__FUNCTION__,confEntry);
-                                }
-                                else if(founddefault==2)
-                                {
-					fprintf(stderr, "%s Enabling secondary XDNS: %s\n",__FUNCTION__,confEntry);
-                                }
-                                else
-                                {
-					fprintf(stderr, "%s Logging Invalid XDNS parameter: %s\n",__FUNCTION__,confEntry);
-                                }
-
-                        }
-
-                        //copy validated entry to temp
-                        printf("############ SetXdnsConfig() copy entry from dnsmasq_servers to temp: [%s]\n", confEntry);
-                        fprintf(fp3, "%s", confEntry);
-                }
+            ERR_CHK(rc1);
+            continue;
         }
+        int gotdefault = 0;
 
-#if defined(_COSA_FOR_BCI_)
+        char *token = strtok(tempEntry, " \t\n\r");
 
+        if(token && strcmp(token, "dnsoverride") == 0)
+        {
+            char *macaddr = NULL, *srvaddr4 = NULL;
+#ifdef FEATURE_IPV6
+            char *srvaddr6 = NULL;
+#endif
+            if(!(macaddr = strtok(NULL, " \t\n\r")))
+            {
+                printf("############ SetXdnsConfig() mac check failed!\n");
+                continue;
+            }
+            else
+            {
+                // check if default
+                if(strcmp(macaddr, "00:00:00:00:00:00") == 0)
+                    gotdefault = 1;
+            }
+
+            if(!(srvaddr4 = strtok(NULL, " \t\n\r")))
+            {
+                printf("############ SetXdnsConfig() addr4 failed!\n");
+                continue;
+            }
+
+            struct sockaddr_in sa;
+            if (inet_pton(AF_INET, srvaddr4, &(sa.sin_addr)) != 1)
+            {
+                printf("############ SetXdnsConfig() addr4 check failed!: %s\n", srvaddr4);
+                continue;
+            }
+
+#ifdef FEATURE_IPV6
+            if(!(srvaddr6 = strtok(NULL, " \t\n\r")))
+            {
+                printf("############ SetXdnsConfig() addr6 failed!\n");
+                continue;
+            }
+
+            struct sockaddr_in6 sa6;
+            if (inet_pton(AF_INET6, srvaddr6, &(sa6.sin6_addr)) != 1)
+            {
+                printf("############ SetXdnsConfig() addr6 check failed!: %s\n", srvaddr6);
+                continue;
+            }
+#endif
+            if(gotdefault)
+            {
+                founddefault++;
+                if(founddefault==1)
+                {
+                    fprintf(stderr, "%s Enabling primary XDNS: %s\n",__FUNCTION__,confEntry);
+                }
+                else if(founddefault==2)
+                {
+                    fprintf(stderr, "%s Enabling secondary XDNS: %s\n",__FUNCTION__,confEntry);
+                }
+                else
+                {
+                    fprintf(stderr, "%s Logging Invalid XDNS parameter: %s\n",__FUNCTION__,confEntry);
+                }
+            }
+
+            //copy validated entry to temp
+            printf("############ SetXdnsConfig() copy entry from dnsmasq_servers to temp: [%s]\n", confEntry);
+            fprintf(fp3, "%s", confEntry);
+        }
+    }
+
+#if defined(_COSA_FOR_BCI_) || defined(_ONESTACK_PRODUCT_REQ_)
+#if defined(_ONESTACK_PRODUCT_REQ_)
+    if (is_bci_partner()) {
+#endif // _ONESTACK_PRODUCT_REQ_
         char multiprofile_flag[5]={0};
         syscfg_get(NULL, "MultiProfileXDNS", multiprofile_flag, sizeof(multiprofile_flag));
         if( multiprofile_flag[0] == '1' &&  multiprofile_flag[1] == '\0')
@@ -1691,161 +1715,164 @@ int SetXdnsConfig()
             fprintf(fp3, "XDNS_Multi_Profile Disabled\n");
             fprintf(stderr,"## CcspXDNS #### Multi Profile XDNS feature is disabled\n");
         }
+#if defined(_ONESTACK_PRODUCT_REQ_)
+    }
+#endif // _ONESTACK_PRODUCT_REQ_
+#endif // _COSA_FOR_BCI_ || _ONESTACK_PRODUCT_REQ_
 
-#endif
+    fclose(fp3); fp3 = NULL;
+    fclose(fp2); fp2 = NULL;
+    fclose(fp1); fp1 = NULL;
 
-        fclose(fp3); fp3 = NULL;
-        fclose(fp2); fp2 = NULL;
-        fclose(fp1); fp1 = NULL;
-
-        // check if we found exactly primary and secondary default dnsoverride entry,
-        if(founddefault >= 1)
+    // check if we found exactly primary and secondary default dnsoverride entry,
+    if(founddefault >= 1)
+    {
+        fp1 = fopen(RESOLV_CONF, "w");
+        if(fp1 == NULL)
         {
-                fp1 = fopen(RESOLV_CONF, "w");
-                if(fp1 == NULL)
-                {
-                        fprintf(stderr,"## XDNS : SetXdnsConfig() - fopen(XDNS_RESOLV_CONF, 'w') Error !!\n");
-                        return 0;
-                }
-
+            fprintf(stderr,"## XDNS : SetXdnsConfig() - fopen(XDNS_RESOLV_CONF, 'w') Error !!\n");
+            return 0;
         }
-        else // default corrupted, missing or more than 1 default
-        {
-                printf("############ SetXdnsConfig() Error: dnsmasq_servers has invalid default entry! cleanup.\n");
-        }
+    }
+    else // default corrupted, missing or more than 1 default
+    {
+        printf("############ SetXdnsConfig() Error: dnsmasq_servers has invalid default entry! cleanup.\n");
+    }
 
-        fp2 = fopen(DNSMASQ_SERVERS_CONF,"w");
-        if(fp2 == NULL)
-        {
-                fprintf(stderr,"## XDNS : SetXdnsConfig() - fopen(XDNS_DNSMASQ_SERVERS_CONF, 'w') Error !!\n");
-                if(fp1){ fclose(fp1);} fp1 = NULL;
-                return 0;
-        }
-
-        fp3 = fopen(DNSMASQ_SERVERS_BAK ,"r");  //file must exist
-        if(fp3 == NULL)
-        {
-                fprintf(stderr,"## XDNS : SetXdnsConfig() - fopen(XDNS_DNSMASQ_SERVERS_BAK, 'r') Error !!\n");
-                fclose(fp2); fp2 = NULL;
-                if(fp1){ fclose(fp1);} fp1 = NULL;
-                return 0;
-        }
-
-
-        //copy back the cleaned up entries to nvram from temp
-        // copy back to resolv.conf if default entry is not corrupt
-        while(fgets(confEntry, sizeof(confEntry), fp3) != NULL)
-        {
-                //copy back entries to resolv.conf if default is found. else keep the old resolv.
-                if(fp1)
-                {
-                        printf("############ SetXdnsConfig() copy to resolv: [%s]\n", confEntry);
-                        fprintf(fp1, "%s", confEntry);
-                }
-
-                //copy only dnsoverride entries (pruned) into nvram
-                if (strstr(confEntry, "dnsoverride"))
-                {
-
-                        printf("############ SetXdnsConfig() copy to dnsmasq_servers: [%s]\n", confEntry);
-                        fprintf(fp2, "%s", confEntry);
-                }
-        }
-
-        if(fp3){ fclose(fp3);} fp3 = NULL;
-        if(fp2){ fclose(fp2);} fp2 = NULL;
+    fp2 = fopen(DNSMASQ_SERVERS_CONF,"w");
+    if(fp2 == NULL)
+    {
+        fprintf(stderr,"## XDNS : SetXdnsConfig() - fopen(XDNS_DNSMASQ_SERVERS_CONF, 'w') Error !!\n");
         if(fp1){ fclose(fp1);} fp1 = NULL;
+        return 0;
+    }
 
-        /*change in resolv.conf. so, restarting dnsmasq*/
-        commonSyseventSet("dhcp_server-stop", "");
-        commonSyseventSet("dhcp_server-start", "");
+    fp3 = fopen(DNSMASQ_SERVERS_BAK ,"r");  //file must exist
+    if(fp3 == NULL)
+    {
+        fprintf(stderr,"## XDNS : SetXdnsConfig() - fopen(XDNS_DNSMASQ_SERVERS_BAK, 'r') Error !!\n");
+        fclose(fp2); fp2 = NULL;
+        if(fp1){ fclose(fp1);} fp1 = NULL;
+        return 0;
+    }
 
-        if(founddefault >= 1)
-                return 1; //success
-        else
-                return 0; //error
+
+    //copy back the cleaned up entries to nvram from temp
+    // copy back to resolv.conf if default entry is not corrupt
+    while(fgets(confEntry, sizeof(confEntry), fp3) != NULL)
+    {
+        //copy back entries to resolv.conf if default is found. else keep the old resolv.
+        if(fp1)
+        {
+            printf("############ SetXdnsConfig() copy to resolv: [%s]\n", confEntry);
+            fprintf(fp1, "%s", confEntry);
+        }
+
+        //copy only dnsoverride entries (pruned) into nvram
+        if (strstr(confEntry, "dnsoverride"))
+        {
+            printf("############ SetXdnsConfig() copy to dnsmasq_servers: [%s]\n", confEntry);
+            fprintf(fp2, "%s", confEntry);
+        }
+    }
+
+    if(fp3){ fclose(fp3);} fp3 = NULL;
+    if(fp2){ fclose(fp2);} fp2 = NULL;
+    if(fp1){ fclose(fp1);} fp1 = NULL;
+
+    /*change in resolv.conf. so, restarting dnsmasq*/
+    commonSyseventSet("dhcp_server-stop", "");
+    commonSyseventSet("dhcp_server-start", "");
+
+    if(founddefault >= 1)
+        return 1; //success
+    else
+        return 0; //error
 }
 
 
 // XDNS - UnetXdnsConfig: Delete all dnsoverride entries from resolv.conf
 int UnsetXdnsConfig()
 {
-        char confEntry[256] = {0};
+    char confEntry[256] = {0};
 
-        FILE *fp1 = NULL, *fp3 = NULL;
+    FILE *fp1 = NULL, *fp3 = NULL;
 
-        fp1 = fopen(RESOLV_CONF, "r");
-        if(fp1 == NULL) // if we cannot open resolv.conf, return success.
+    fp1 = fopen(RESOLV_CONF, "r");
+    if(fp1 == NULL) // if we cannot open resolv.conf, return success.
+    {
+            return 1;
+    }
+
+    // 1. copy all non-dnsoverride entries from resolv.conf to temp file
+    // 2. clear resolv.conf file by opening in 'w' mode
+    // 3. copy all contents from temp file to resolv.conf
+
+    unlink(DNSMASQ_SERVERS_BAK);
+
+    fp3 = fopen(DNSMASQ_SERVERS_BAK ,"a");
+    if(fp3 == NULL)
+    {
+        fprintf(stderr,"## XDNS : UnsetXdnsConfig() - fopen(XDNS_DNSMASQ_SERVERS_BAK, 'a') Error !!\n");
+        fclose(fp1);
+        return 0;
+    }
+
+    while(fgets(confEntry, sizeof(confEntry), fp1) != NULL)
+    {
+        if ( strstr(confEntry, "dnsoverride"))
         {
-                return 1;
+            continue; //skip
         }
 
-        // 1. copy all non-dnsoverride entries from resolv.conf to temp file
-        // 2. clear resolv.conf file by opening in 'w' mode
-        // 3. copy all contents from temp file to resolv.conf
-
-        unlink(DNSMASQ_SERVERS_BAK);
-
-        fp3 = fopen(DNSMASQ_SERVERS_BAK ,"a");
-        if(fp3 == NULL)
-        {
-                fprintf(stderr,"## XDNS : UnsetXdnsConfig() - fopen(XDNS_DNSMASQ_SERVERS_BAK, 'a') Error !!\n");
-                fclose(fp1);
-                return 0;
-        }
-
-        while(fgets(confEntry, sizeof(confEntry), fp1) != NULL)
-        {
-                if ( strstr(confEntry, "dnsoverride"))
-                {
-                        continue; //skip
-                }
-
-#if defined(_COSA_FOR_BCI_)
-
+#if defined(_COSA_FOR_BCI_) || defined(_ONESTACK_PRODUCT_REQ_)
+#if defined(_ONESTACK_PRODUCT_REQ_)
+        if (is_bci_partner()) {
+#endif // _ONESTACK_PRODUCT_REQ_
             if ( strstr(confEntry, "XDNS_Multi_Profile"))
-                {
-                        continue;
-                }
-#endif
-
-                printf("############ UnsetXdnsConfig() saving from resolv.conf to bak [%s]\n", confEntry);
-                fprintf(fp3, "%s", confEntry);
+            {
+                continue;
+            }
+#if defined(_ONESTACK_PRODUCT_REQ_)
         }
+#endif // _ONESTACK_PRODUCT_REQ_
+#endif // _COSA_FOR_BCI_ || _ONESTACK_PRODUCT_REQ_
 
-        // now all entries (non-dnsoverride) from resolv.conf is saved to bak
-        // copy back
-        fclose(fp3); fp3 = NULL;
+        printf("############ UnsetXdnsConfig() saving from resolv.conf to bak [%s]\n", confEntry);
+        fprintf(fp3, "%s", confEntry);
+    }
+
+    // now all entries (non-dnsoverride) from resolv.conf is saved to bak
+    // copy back
+    fclose(fp3); fp3 = NULL;
+    fclose(fp1); fp1 = NULL;
+
+    fp1 = fopen(RESOLV_CONF, "w");
+    if(fp1 == NULL)
+    {
+        fprintf(stderr,"## XDNS : UnsetXdnsConfig() - fopen(XDNS_RESOLV_CONF, 'w') Error !!\n");
+        return 0;
+    }
+
+    fp3 = fopen(DNSMASQ_SERVERS_BAK ,"r");  //file must exist
+    if(fp3 == NULL)
+    {
+        fprintf(stderr,"## XDNS : UnsetXdnsConfig() - fopen(XDNS_DNSMASQ_SERVERS_BAK, 'r') Error !!\n");
         fclose(fp1); fp1 = NULL;
+        return 0;
+    }
 
-        fp1 = fopen(RESOLV_CONF, "w");
-        if(fp1 == NULL)
-        {
-                fprintf(stderr,"## XDNS : UnsetXdnsConfig() - fopen(XDNS_RESOLV_CONF, 'w') Error !!\n");
-                return 0;
-        }
+    while(fgets(confEntry, sizeof(confEntry), fp3) != NULL)
+    {
+        printf("############ UnsetXdnsConfig() reading from bak and writing to resolv.conf[%s]\n", confEntry);
+        fprintf(fp1, "%s", confEntry);
+    }
 
-        fp3 = fopen(DNSMASQ_SERVERS_BAK ,"r");  //file must exist
-        if(fp3 == NULL)
-        {
-                fprintf(stderr,"## XDNS : UnsetXdnsConfig() - fopen(XDNS_DNSMASQ_SERVERS_BAK, 'r') Error !!\n");
-                fclose(fp1); fp1 = NULL;
-                return 0;
-        }
-
-        while(fgets(confEntry, sizeof(confEntry), fp3) != NULL)
-        {
-                printf("############ UnsetXdnsConfig() reading from bak and writing to resolv.conf[%s]\n", confEntry);
-                fprintf(fp1, "%s", confEntry);
-        }
-
-
-
-	fprintf(stderr, "%s ############ Disabled XDNS#######\n",__FUNCTION__);
-        fclose(fp3); fp3 = NULL;
-        fclose(fp1); fp1 = NULL;
-          /*change in resolv.conf. so, restarting dnsmasq*/
-        commonSyseventSet("dhcp_server-stop", "");
-        commonSyseventSet("dhcp_server-start", "");
-        return 1;
+    fprintf(stderr, "%s ############ Disabled XDNS#######\n",__FUNCTION__);
+    fclose(fp3); fp3 = NULL;
+    fclose(fp1); fp1 = NULL;
+    /*change in resolv.conf. so, restarting dnsmasq*/
+    commonSyseventSet("dhcp_server-stop", "");
+    commonSyseventSet("dhcp_server-start", "");
+    return 1;
 }
