@@ -139,7 +139,7 @@ int setBlobVersion(char* subdoc,uint32_t version)
 
 }
 
-/* API to read device dns ip from resolve.conf */
+/* API to read device dns ip from resolv.conf */
 int xdns_read_dns_ip(char *UseRDKDefaultDeviceDnsIPv4, char *UseRDKDefaultDeviceDnsIPv6)
 {
         char buff[256] = {0};
@@ -278,7 +278,7 @@ int xdns_read_load_dns_ip(char *Blob_Valid_IPv4, char *Blob_Valid_IPv6, char *Dn
         ret = xdns_read_dns_ip(UseRDKDefaultDeviceIPv4, UseRDKDefaultDeviceIPv6);
         if ( 0 != ret )
         {
-             CcspTraceError(("%d:%s !!!UseRDKDefaultDeviceDnsIP: Unable to read Resolve.conf file OR resolv.conf file may not exits\n", __LINE__, __FUNCTION__));
+             CcspTraceError(("%d:%s !!!UseRDKDefaultDeviceDnsIP: Unable to read resolv.conf file OR resolv.conf file may not exits\n", __LINE__, __FUNCTION__));
              return ret;
         }
 
@@ -615,16 +615,22 @@ int apply_XDNS_cache_ToDB(xdns_cache *tmp_xdns_cache)
         }
         else
         {
-#ifdef _CBR_PRODUCT_REQ_
-            if (syscfg_set(NULL, "XDNS_DNSSecEnable", setval) != 0)
-            {
-                fprintf(stderr, "%s syscfg_set XDNS_DNSSecEnable failed %d !!!\n",__FUNCTION__,tmp_xdns_cache->XdnsEnable);
+#if defined(_CBR_PRODUCT_REQ_) || defined(_ONESTACK_PRODUCT_REQ_)
+#if defined(_ONESTACK_PRODUCT_REQ_)
+            if (is_bci_partner()) {
+#endif // _ONESTACK_PRODUCT_REQ_
+                if (syscfg_set(NULL, "XDNS_DNSSecEnable", setval) != 0)
+                {
+                    fprintf(stderr, "%s syscfg_set XDNS_DNSSecEnable failed %d !!!\n",__FUNCTION__,tmp_xdns_cache->XdnsEnable);
+                }
+                else
+                {
+                    fprintf(stderr, "%s XDNS_DNSSecEnable value is set to %d in DB\n",__FUNCTION__,tmp_xdns_cache->XdnsEnable);
+                }
+#if defined(_ONESTACK_PRODUCT_REQ_)
             }
-            else
-            {
-                fprintf(stderr, "%s XDNS_DNSSecEnable value is set to %d in DB\n",__FUNCTION__,tmp_xdns_cache->XdnsEnable);
-            }
-#endif        
+#endif // _ONESTACK_PRODUCT_REQ_
+#endif // _CBR_PRODUCT_REQ_ || _ONESTACK_PRODUCT_REQ_
             if (syscfg_commit() != 0)
             {
                 fprintf(stderr, "%s syscfg_commit X_RDKCENTRAL-COM_XDNS failed!!!\n",__FUNCTION__);

@@ -285,20 +285,26 @@ CcspXdnsConsoleTrace(("RDK_LOG_DEBUG, Xdns %s : ENTER \n", __FUNCTION__ ));
 
         if (syscfg_set(NULL, "X_RDKCENTRAL-COM_XDNS", bval) != 0)
         {
-                CcspXdnsConsoleTrace(("[XDNS] syscfg_set X_RDKCENTRAL-COM_XDNS failed!\n"));
+            CcspXdnsConsoleTrace(("[XDNS] syscfg_set X_RDKCENTRAL-COM_XDNS failed!\n"));
         }
         else
         {
-#ifdef _CBR_PRODUCT_REQ_
+#if defined(_CBR_PRODUCT_REQ_) || defined(_ONESTACK_PRODUCT_REQ_)
+#if defined(_ONESTACK_PRODUCT_REQ_)
+            if (is_bci_partner()) {
+#endif // _ONESTACK_PRODUCT_REQ_
                 if (syscfg_set(NULL, "XDNS_DNSSecEnable", bval) != 0)
                 {
-                        AnscTraceWarning(("[XDNS] syscfg_set XDNS_DNSSecEnable failed!\n"));
+                    AnscTraceWarning(("[XDNS] syscfg_set XDNS_DNSSecEnable failed!\n"));
                 }
                 else
                 {
-                        fprintf(stderr, "%s [XDNS] XDNS_DNSSecEnable value is set to %s in DB\n",__FUNCTION__,bval);
+                    fprintf(stderr, "%s [XDNS] XDNS_DNSSecEnable value is set to %s in DB\n", __FUNCTION__, bval);
                 }
-#endif        
+#if defined(_ONESTACK_PRODUCT_REQ_)
+            }
+#endif // _ONESTACK_PRODUCT_REQ_
+#endif // _CBR_PRODUCT_REQ_ || _ONESTACK_PRODUCT_REQ_
                 if (syscfg_commit() != 0)
                 {
                         CcspXdnsConsoleTrace(("[XDNS] syscfg_commit X_RDKCENTRAL-COM_XDNS failed!\n"));
@@ -631,21 +637,25 @@ XDNS_GetParamBoolValue
     ERR_CHK(rc);
     if((!ind) && (rc == EOK))
     {
-#ifdef _CBR_PRODUCT_REQ_
+#if defined(_CBR_PRODUCT_REQ_) || defined(_ONESTACK_PRODUCT_REQ_)
+#if defined(_ONESTACK_PRODUCT_REQ_)
+        if (is_bci_partner()) {
+#endif // _ONESTACK_PRODUCT_REQ_
         char buf[5] = {0};
         syscfg_get( NULL, "XDNS_DNSSecEnable", buf, sizeof(buf));
         if( buf != NULL )
         {
-        	int var=atoi(buf);
-    		if(var)
-    		{
-
-                        *pBool = TRUE;
-                        return TRUE;
-                }
+            int var=atoi(buf);
+            if(var)
+            {
+                *pBool = TRUE;
+                return TRUE;
+            }
         }
-
-#endif
+#if defined(_ONESTACK_PRODUCT_REQ_)
+        }
+#endif // _ONESTACK_PRODUCT_REQ_
+#endif // _CBR_PRODUCT_REQ_ || _ONESTACK_PRODUCT_REQ_
         *pBool = FALSE;
 
         return TRUE;
@@ -674,42 +684,44 @@ CcspXdnsConsoleTrace(("RDK_LOG_DEBUG, Xdns %s : ENTER \n", __FUNCTION__ ));
     ERR_CHK(rc);
     if((!ind) && (rc == EOK))
     {
-#ifdef _CBR_PRODUCT_REQ_    
-        char bval[2] = {0};
-        if( bValue == TRUE)
-        {
+#if defined(_CBR_PRODUCT_REQ_) || defined(_ONESTACK_PRODUCT_REQ_)
+#if defined(_ONESTACK_PRODUCT_REQ_)
+        if (is_bci_partner()) {
+#endif // _ONESTACK_PRODUCT_REQ_
+            char bval[2] = {0};
+            if( bValue == TRUE)
+            {
                 bval[0] = '1';
-        }
-        else
-        {
-                        bval[0] = '0';
-                }
+            }
+            else
+            {
+                bval[0] = '0';
+            }
 
+            if (syscfg_set(NULL, "XDNS_DNSSecEnable", bval) != 0)
+            {
 
-
-        if (syscfg_set(NULL, "XDNS_DNSSecEnable", bval) != 0)
-        {
-
-               CcspXdnsConsoleTrace(("RDK_LOG_DEBUG,%s syscfg_set XDNS_DNSSecEnable failed!!!!!\n", __FUNCTION__ ));
-        }
-        else
-        {
+                CcspXdnsConsoleTrace(("RDK_LOG_DEBUG,%s syscfg_set XDNS_DNSSecEnable failed!!!!!\n", __FUNCTION__ ));
+            }
+            else
+            {
                 if (syscfg_commit() != 0)
                 {
-                       CcspXdnsConsoleTrace(("RDK_LOG_DEBUG,%s syscfg_commit XDNS_DNSSecEnable failed!!!!\n", __FUNCTION__ ));
+                    CcspXdnsConsoleTrace(("RDK_LOG_DEBUG,%s syscfg_commit XDNS_DNSSecEnable failed!!!!\n", __FUNCTION__ ));
                 }
                 else
                 {
-                       fprintf(stderr, "%s syscfg_set XDNS_DNSSecEnable value set to %s \n",__FUNCTION__,bval);
-                       commonSyseventSet("dhcp_server-stop", "");
-                       commonSyseventSet("dhcp_server-start", "");
+                    fprintf(stderr, "%s syscfg_set XDNS_DNSSecEnable value set to %s \n",__FUNCTION__,bval);
+                    commonSyseventSet("dhcp_server-stop", "");
+                    commonSyseventSet("dhcp_server-start", "");
                 }
+            }
+            return TRUE;
+#if defined(_ONESTACK_PRODUCT_REQ_)
         }
-
-        return TRUE;
-#endif
+#endif // _ONESTACK_PRODUCT_REQ_
+#endif // _CBR_PRODUCT_REQ_ || _ONESTACK_PRODUCT_REQ_
     }
-
 	return FALSE;
 }
 
