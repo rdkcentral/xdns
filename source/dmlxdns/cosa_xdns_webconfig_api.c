@@ -278,7 +278,7 @@ int xdns_read_load_dns_ip(char *Blob_Valid_IPv4, char *Blob_Valid_IPv6, char *Dn
         ret = xdns_read_dns_ip(UseRDKDefaultDeviceIPv4, UseRDKDefaultDeviceIPv6);
         if ( 0 != ret )
         {
-             CcspTraceError(("%d:%s !!!UseRDKDefaultDeviceDnsIP: Unable to read resolv.conf file OR resolv.conf file may not exits\n", __LINE__, __FUNCTION__));
+             CcspTraceError(("%d:%s !!!UseRDKDefaultDeviceDnsIP: Unable to read resolv.conf file OR resolv.conf file may not exist\n", __LINE__, __FUNCTION__));
              return ret;
         }
 
@@ -591,7 +591,7 @@ int apply_XDNS_cache_ToDB(xdns_cache *tmp_xdns_cache)
     int var=atoi(buf);
     if( tmp_xdns_cache->XdnsEnable == var)
     {
-        fprintf(stderr, "%s blob and DB XDNS ENABLE falg are same %d !!!\n",__FUNCTION__,tmp_xdns_cache->XdnsEnable);
+        fprintf(stderr, "%s blob and DB XDNS ENABLE flag are same %d !!!\n",__FUNCTION__,tmp_xdns_cache->XdnsEnable);
     }
     else
     {
@@ -774,7 +774,7 @@ int set_xdns_conf(xdnsdoc_t *xd, xdns_cache *tmp_xdns_cache)
                 )
 #else // _ONESTACK_PRODUCT_REQ_
         else if ( 
-                    ( !strncmp(xd->table_param->entries[i].dns_ipv4, USE_RDK_DEFAULT_STRING, sizeof(USE_RDK_DEFAULT_STRING) ) && ( INVALID_IP != CheckIfIpIsValid(xd->table_param->entries[i].dns_ipv4)) ) ||
+                    ( !strncmp(xd->table_param->entries[i].dns_ipv4, USE_RDK_DEFAULT_STRING, sizeof(USE_RDK_DEFAULT_STRING) ) && ( INVALID_IP != CheckIfIpIsValid(xd->table_param->entries[i].dns_ipv6)) ) ||
                     ( (INVALID_IP != CheckIfIpIsValid(xd->table_param->entries[i].dns_ipv4)) && (!strncmp(xd->table_param->entries[i].dns_ipv6, USE_RDK_DEFAULT_STRING, sizeof(USE_RDK_DEFAULT_STRING))) ) ||
                     ( (!strncmp(xd->table_param->entries[i].dns_ipv4, USE_RDK_DEFAULT_STRING, sizeof(USE_RDK_DEFAULT_STRING))) && (!strncmp(xd->table_param->entries[i].dns_ipv6, USE_RDK_DEFAULT_STRING, sizeof(USE_RDK_DEFAULT_STRING))) )
                 )
@@ -823,7 +823,7 @@ pErr Process_XDNS_WebConfigRequest(void *Data)
     xdnsdoc_t *xd = (xdnsdoc_t *) Data ;
 
     fprintf(stderr, "%s : xd->table_param->entries_count is %ld\n",__FUNCTION__,(long int)xd->table_param->entries_count);
-    fprintf(stderr, "XDNS configurartion recieved\n");
+    fprintf(stderr, "XDNS configuration received\n");
 
     /*clean Backup cache and take back of orginal cache*/
     clear_xdns_cache(&XDNS_tmp_bck);
@@ -880,7 +880,7 @@ pErr Process_XDNS_WebConfigRequest(void *Data)
         return execRetVal;
     }
 
-    fprintf(stderr, "%s :XDNS configurartion applied\n",__FUNCTION__);
+    fprintf(stderr, "%s :XDNS configuration applied\n",__FUNCTION__);
 
     fprintf(stderr, "xd->enable_xdns %s\n", xd->enable_xdns?"true":"false");
     fprintf(stderr, "xd->default_ipv4 %s\n", xd->default_ipv4);

@@ -1563,7 +1563,7 @@ int SetXdnsConfig()
     if(fp1 == NULL)
     {
         fprintf(stderr,"## XDNS : SetXdnsConfig() - fopen(XDNS_RESOLV_CONF, 'r') Error !!\n");
-        return 0; // if resolv.conf does not exist return return fail.
+        return 0; // if resolv.conf does not exist, return fail.
     }
 
     fp2 = fopen(DNSMASQ_SERVERS_CONF ,"r");
