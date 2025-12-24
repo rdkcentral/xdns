@@ -15,7 +15,7 @@
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
  * See the License for the specific language governing permissions and
  * limitations under the License.
-*/
+ */
 #ifndef __COMP_HELPERS_H__
 #define __COMP_HELPERS_H__
 #include <stdbool.h>
@@ -30,7 +30,8 @@
 /*----------------------------------------------------------------------------*/
 /*                               Data Structures                              */
 /*----------------------------------------------------------------------------*/
-enum {
+enum
+{
     HELPERS_OK = 0,
     HELPERS_OUT_OF_MEMORY,
     HELPERS_INVALID_FIRST_ELEMENT,
@@ -58,14 +59,14 @@ typedef void (*destroy_fn_t)(void *);
  *  @returns the object after process has done it's magic to it on success, or
  *           NULL on error
  */
-void* comp_helper_convert( const void *buf, size_t len,
-                      size_t struct_size, const char *wrapper,
-                      msgpack_object_type expect_type, bool optional,
-                      process_fn_t process,
-                      destroy_fn_t destroy );
-void* helper_convert_array( const void *buf, size_t len,
-                      size_t struct_size, const char *wrapper,
-                      msgpack_object_type expect_type, bool optional,
-                      process_fn_t process,
-                      destroy_fn_t destroy );
+void *comp_helper_convert(const void *buf, size_t len,
+                          size_t struct_size, const char *wrapper,
+                          msgpack_object_type expect_type, bool optional,
+                          process_fn_t process,
+                          destroy_fn_t destroy);
+void *helper_convert_array(const void *buf, size_t len,
+                           size_t struct_size, const char *wrapper,
+                           msgpack_object_type expect_type, bool optional,
+                           process_fn_t process,
+                           destroy_fn_t destroy);
 #endif

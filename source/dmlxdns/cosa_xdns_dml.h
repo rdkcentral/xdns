@@ -15,10 +15,10 @@
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
  * See the License for the specific language governing permissions and
  * limitations under the License.
-*/
+ */
 
-#ifndef  _COSA_XDNS_DML_H
-#define  _COSA_XDNS_DML_H
+#ifndef _COSA_XDNS_DML_H
+#define _COSA_XDNS_DML_H
 #define MAX_XDNS_SERV 2
 
 /***********************************************************************
@@ -46,58 +46,39 @@
 ***********************************************************************/
 
 ULONG
-XDNS_GetParamStringValue
-    (
-        ANSC_HANDLE                 hInsContext,
-        char*                       ParamName,
-        char*                       pValue,
-        ULONG*                      pUlSize
-    );
+XDNS_GetParamStringValue(
+    ANSC_HANDLE hInsContext,
+    char *ParamName,
+    char *pValue,
+    ULONG *pUlSize);
 
-BOOL
-XDNS_SetParamStringValue
-    (
-        ANSC_HANDLE                 hInsContext,
-        char*                       ParamName,
-        char*                       strValue
-    );
+BOOL XDNS_SetParamStringValue(
+    ANSC_HANDLE hInsContext,
+    char *ParamName,
+    char *strValue);
 
-BOOL
-XDNS_GetParamBoolValue
-    (
-        ANSC_HANDLE                 hInsContext,
-        char*                       ParamName,
-        BOOL*                       pBool
-    );
+BOOL XDNS_GetParamBoolValue(
+    ANSC_HANDLE hInsContext,
+    char *ParamName,
+    BOOL *pBool);
 
-BOOL
-XDNS_SetParamBoolValue
-    (
-        ANSC_HANDLE                 hInsContext,
-        char*                       ParamName,
-        BOOL                        bValue
-    );
+BOOL XDNS_SetParamBoolValue(
+    ANSC_HANDLE hInsContext,
+    char *ParamName,
+    BOOL bValue);
 
-
-BOOL
-XDNS_Validate
-    (
-        ANSC_HANDLE                 hInsContext,
-        char*                       pReturnParamName,
-        ULONG*                      puLength
-    );
+BOOL XDNS_Validate(
+    ANSC_HANDLE hInsContext,
+    char *pReturnParamName,
+    ULONG *puLength);
 
 ULONG
-XDNS_Commit
-    (
-        ANSC_HANDLE                 hInsContext
-    );
+XDNS_Commit(
+    ANSC_HANDLE hInsContext);
 
 ULONG
-XDNS_Rollback
-    (
-        ANSC_HANDLE                 hInsContext
-    );
+XDNS_Rollback(
+    ANSC_HANDLE hInsContext);
 
 /***********************************************************************
 
@@ -110,20 +91,14 @@ XDNS_Rollback
 
 ***********************************************************************/
 
-BOOL
-XDNSDeviceInfo_GetParamBoolValue
-    (
-        ANSC_HANDLE                 hInsContext,
-        char*                       ParamName,
-        BOOL*                       pBool
-    );
-BOOL
-XDNSDeviceInfo_SetParamBoolValue
-    (
-        ANSC_HANDLE                 hInsContext,
-        char*                       ParamName,
-        BOOL                        bValue
-    );
+BOOL XDNSDeviceInfo_GetParamBoolValue(
+    ANSC_HANDLE hInsContext,
+    char *ParamName,
+    BOOL *pBool);
+BOOL XDNSDeviceInfo_SetParamBoolValue(
+    ANSC_HANDLE hInsContext,
+    char *ParamName,
+    BOOL bValue);
 
 /***********************************************************************
 
@@ -136,21 +111,14 @@ XDNSDeviceInfo_SetParamBoolValue
 
 ***********************************************************************/
 
-BOOL
-XDNSRefac_GetParamBoolValue
-    (
-        ANSC_HANDLE                 hInsContext,
-        char*                       ParamName,
-        BOOL*                       pBool
-    );
-BOOL
-XDNSRefac_SetParamBoolValue
-    (
-        ANSC_HANDLE                 hInsContext,
-        char*                       ParamName,
-        BOOL                        bValue
-    );
-
+BOOL XDNSRefac_GetParamBoolValue(
+    ANSC_HANDLE hInsContext,
+    char *ParamName,
+    BOOL *pBool);
+BOOL XDNSRefac_SetParamBoolValue(
+    ANSC_HANDLE hInsContext,
+    char *ParamName,
+    BOOL bValue);
 
 /***********************************************************************
 
@@ -173,83 +141,55 @@ XDNSRefac_SetParamBoolValue
 ***********************************************************************/
 
 ULONG
-DNSMappingTable_GetEntryCount
-    (
-        ANSC_HANDLE
-    );
+DNSMappingTable_GetEntryCount(
+    ANSC_HANDLE);
 
 ANSC_HANDLE
-DNSMappingTable_GetEntry
-    (
-        ANSC_HANDLE                 hInsContext,
-        ULONG                       nIndex,
-        ULONG*                      pInsNumber
-    );
+DNSMappingTable_GetEntry(
+    ANSC_HANDLE hInsContext,
+    ULONG nIndex,
+    ULONG *pInsNumber);
 
-BOOL
-DNSMappingTable_IsUpdated
-    (
-        ANSC_HANDLE                 hInsContext
-    );
+BOOL DNSMappingTable_IsUpdated(
+    ANSC_HANDLE hInsContext);
 
 ULONG
-DNSMappingTable_Synchronize
-    (
-        ANSC_HANDLE                 hInsContext
-    );
+DNSMappingTable_Synchronize(
+    ANSC_HANDLE hInsContext);
 
 ANSC_HANDLE
-DNSMappingTable_AddEntry
-    (
-        ANSC_HANDLE                 hInsContext,
-        ULONG*                      pInsNumber
-    );
+DNSMappingTable_AddEntry(
+    ANSC_HANDLE hInsContext,
+    ULONG *pInsNumber);
 
 ULONG
-DNSMappingTable_DelEntry
-    (
-        ANSC_HANDLE                 hInsContext,
-        ANSC_HANDLE                 hInstance
-    );
+DNSMappingTable_DelEntry(
+    ANSC_HANDLE hInsContext,
+    ANSC_HANDLE hInstance);
 
 ULONG
-DNSMappingTable_GetParamStringValue
-    (
-        ANSC_HANDLE                 hInsContext,
-        char*                       ParamName,
-        char*                       pValue,
-        ULONG*                      pUlSize
-    );
+DNSMappingTable_GetParamStringValue(
+    ANSC_HANDLE hInsContext,
+    char *ParamName,
+    char *pValue,
+    ULONG *pUlSize);
 
-BOOL
-DNSMappingTable_SetParamStringValue
-    (
-        ANSC_HANDLE                 hInsContext,
-        char*                       ParamName,
-        char*                       strValue
-    );
+BOOL DNSMappingTable_SetParamStringValue(
+    ANSC_HANDLE hInsContext,
+    char *ParamName,
+    char *strValue);
 
-BOOL
-DNSMappingTable_Validate
-    (
-        ANSC_HANDLE                 hInsContext,
-        char*                       pReturnParamName,
-        ULONG*                      puLength
-    );
+BOOL DNSMappingTable_Validate(
+    ANSC_HANDLE hInsContext,
+    char *pReturnParamName,
+    ULONG *puLength);
 
 ULONG
-DNSMappingTable_Commit
-    (
-        ANSC_HANDLE                 hInsContext
-    );
+DNSMappingTable_Commit(
+    ANSC_HANDLE hInsContext);
 
 ULONG
-DNSMappingTable_Rollback
-    (
-        ANSC_HANDLE                 hInsContext
-    );
-
-
-
+DNSMappingTable_Rollback(
+    ANSC_HANDLE hInsContext);
 
 #endif

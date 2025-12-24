@@ -15,24 +15,23 @@
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
  * See the License for the specific language governing permissions and
  * limitations under the License.
-*/
+ */
 
 /**********************************************************************
    Copyright [2014] [Cisco Systems, Inc.]
- 
+
    Licensed under the Apache License, Version 2.0 (the "License");
    you may not use this file except in compliance with the License.
    You may obtain a copy of the License at
- 
+
        http://www.apache.org/licenses/LICENSE-2.0
- 
+
    Unless required by applicable law or agreed to in writing, software
    distributed under the License is distributed on an "AS IS" BASIS,
    WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
    See the License for the specific language governing permissions and
    limitations under the License.
 **********************************************************************/
-
 
 /***********************************************************************
 
@@ -73,16 +72,16 @@
 #include "webconfig_framework.h"
 #include "cosa_xdns_webconfig_api.h"
 
-COSAGetParamValueStringProc        g_GetParamValueString;
-COSAGetParamValueUlongProc         g_GetParamValueUlong;
+COSAGetParamValueStringProc g_GetParamValueString;
+COSAGetParamValueUlongProc g_GetParamValueUlong;
 COSAValidateHierarchyInterfaceProc g_ValidateInterface;
-COSAGetHandleProc                  g_GetRegistryRootFolder;
-COSAGetInstanceNumberByIndexProc   g_GetInstanceNumberByIndex;
-COSAGetInterfaceByNameProc         g_GetInterfaceByName;
-COSAGetHandleProc                  g_GetMessageBusHandle;
-COSAGetSubsystemPrefixProc         g_GetSubsystemPrefix;
-PCCSP_CCD_INTERFACE                g_pXdnsCcdIf;
-ANSC_HANDLE                        g_MessageBusHandle;
+COSAGetHandleProc g_GetRegistryRootFolder;
+COSAGetInstanceNumberByIndexProc g_GetInstanceNumberByIndex;
+COSAGetInterfaceByNameProc g_GetInterfaceByName;
+COSAGetHandleProc g_GetMessageBusHandle;
+COSAGetSubsystemPrefixProc g_GetSubsystemPrefix;
+PCCSP_CCD_INTERFACE g_pXdnsCcdIf;
+ANSC_HANDLE g_MessageBusHandle;
 
 /**********************************************************************
 
@@ -106,32 +105,30 @@ ANSC_HANDLE                        g_MessageBusHandle;
 **********************************************************************/
 
 ANSC_HANDLE
-CosaBackEndManagerCreate
-    (
-        VOID
-    )
+CosaBackEndManagerCreate(
+    VOID)
 {
-    PCOSA_BACKEND_MANAGER_OBJECT    pMyObject    = (PCOSA_BACKEND_MANAGER_OBJECT)NULL;
+    PCOSA_BACKEND_MANAGER_OBJECT pMyObject = (PCOSA_BACKEND_MANAGER_OBJECT)NULL;
     /*
-        * We create object by first allocating memory for holding the variables and member functions.
-        */
+     * We create object by first allocating memory for holding the variables and member functions.
+     */
     pMyObject = (PCOSA_BACKEND_MANAGER_OBJECT)AnscAllocateMemory(sizeof(COSA_BACKEND_MANAGER_OBJECT));
 
-    if ( !pMyObject )
+    if (!pMyObject)
     {
-        return  (ANSC_HANDLE)NULL;
+        return (ANSC_HANDLE)NULL;
     }
 
     /*
      * Initialize the common variables and functions for a container object.
      */
-    pMyObject->Oid               = COSA_DATAMODEL_XDNS_OID;
-    pMyObject->Create            = CosaBackEndManagerCreate;
-    pMyObject->Remove            = CosaBackEndManagerRemove;
-    pMyObject->Initialize        = CosaBackEndManagerInitialize;
+    pMyObject->Oid = COSA_DATAMODEL_XDNS_OID;
+    pMyObject->Create = CosaBackEndManagerCreate;
+    pMyObject->Remove = CosaBackEndManagerRemove;
+    pMyObject->Initialize = CosaBackEndManagerInitialize;
 
     /*pMyObject->Initialize   ((ANSC_HANDLE)pMyObject);*/
-    return  (ANSC_HANDLE)pMyObject;
+    return (ANSC_HANDLE)pMyObject;
 }
 
 /**********************************************************************
@@ -150,7 +147,7 @@ CosaBackEndManagerCreate
 
         This function initiate cosa manager object and return handle.
 
-    argument:	ANSC_HANDLE                 hThisObject
+    argument:    ANSC_HANDLE                 hThisObject
             This handle is actually the pointer of this object
             itself.
 
@@ -159,16 +156,14 @@ CosaBackEndManagerCreate
 **********************************************************************/
 
 ANSC_STATUS
-CosaBackEndManagerInitialize
-    (
-        ANSC_HANDLE                 hThisObject
-    )
+CosaBackEndManagerInitialize(
+    ANSC_HANDLE hThisObject)
 {
-    ANSC_STATUS                     returnStatus = ANSC_STATUS_SUCCESS;
-    PCOSA_BACKEND_MANAGER_OBJECT  pMyObject    = (PCOSA_BACKEND_MANAGER_OBJECT)hThisObject;
+    ANSC_STATUS returnStatus = ANSC_STATUS_SUCCESS;
+    PCOSA_BACKEND_MANAGER_OBJECT pMyObject = (PCOSA_BACKEND_MANAGER_OBJECT)hThisObject;
 
     /* Create all object */
-    pMyObject->hXdns          = (ANSC_HANDLE)CosaXDNSCreate();
+    pMyObject->hXdns = (ANSC_HANDLE)CosaXDNSCreate();
 
     fprintf(stderr, "  Initializing WebConfig Framework!\n");
 
@@ -203,20 +198,18 @@ CosaBackEndManagerInitialize
 **********************************************************************/
 
 ANSC_STATUS
-CosaBackEndManagerRemove
-    (
-        ANSC_HANDLE                 hThisObject
-    )
+CosaBackEndManagerRemove(
+    ANSC_HANDLE hThisObject)
 {
-    ANSC_STATUS                     returnStatus = ANSC_STATUS_SUCCESS;
-    PCOSA_BACKEND_MANAGER_OBJECT  pMyObject    = (PCOSA_BACKEND_MANAGER_OBJECT)hThisObject;
+    ANSC_STATUS returnStatus = ANSC_STATUS_SUCCESS;
+    PCOSA_BACKEND_MANAGER_OBJECT pMyObject = (PCOSA_BACKEND_MANAGER_OBJECT)hThisObject;
 
     /* Remove all objects */
-    if ( pMyObject->hXdns )
+    if (pMyObject->hXdns)
     {
         CosaXDNSRemove((ANSC_HANDLE)pMyObject->hXdns);
     }
- 
+
     /* Remove self */
     AnscFreeMemory((ANSC_HANDLE)pMyObject);
 
@@ -225,32 +218,40 @@ CosaBackEndManagerRemove
 
 int commonSyseventFd = -1;
 token_t commonSyseventToken;
-    
-static int openCommonSyseventConnection() {
-    if (commonSyseventFd == -1) {
+
+static int openCommonSyseventConnection()
+{
+    if (commonSyseventFd == -1)
+    {
         commonSyseventFd = s_sysevent_connect(&commonSyseventToken);
     }
     return 0;
 }
 
-int commonSyseventSet(char* key, char* value){
-    if(commonSyseventFd == -1) {
+int commonSyseventSet(char *key, char *value)
+{
+    if (commonSyseventFd == -1)
+    {
         openCommonSyseventConnection();
     }
     return sysevent_set(commonSyseventFd, commonSyseventToken, key, value, 0);
 }
 
-int commonSyseventGet(char* key, char* value, int valLen){
-    if(commonSyseventFd == -1) {
+int commonSyseventGet(char *key, char *value, int valLen)
+{
+    if (commonSyseventFd == -1)
+    {
         openCommonSyseventConnection();
     }
     return sysevent_get(commonSyseventFd, commonSyseventToken, key, value, valLen);
 }
 
-int commonSyseventClose() {
+int commonSyseventClose()
+{
     int retval;
 
-    if(commonSyseventFd == -1) {
+    if (commonSyseventFd == -1)
+    {
         return 0;
     }
 

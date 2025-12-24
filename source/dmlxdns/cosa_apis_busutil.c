@@ -15,24 +15,23 @@
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
  * See the License for the specific language governing permissions and
  * limitations under the License.
-*/
+ */
 
 /**********************************************************************
    Copyright [2014] [Cisco Systems, Inc.]
- 
+
    Licensed under the Apache License, Version 2.0 (the "License");
    you may not use this file except in compliance with the License.
    You may obtain a copy of the License at
- 
+
        http://www.apache.org/licenses/LICENSE-2.0
- 
+
    Unless required by applicable law or agreed to in writing, software
    distributed under the License is distributed on an "AS IS" BASIS,
    WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
    See the License for the specific language governing permissions and
    limitations under the License.
 **********************************************************************/
-
 
 /**********************************************************************
 
@@ -81,7 +80,7 @@
 #include "cosa_apis_busutil.h"
 #include "ansc_platform.h"
 
-extern void * g_pDslhDmlAgent;
+extern void *g_pDslhDmlAgent;
 /**********************************************************************
 
     prototype:
@@ -104,10 +103,8 @@ extern void * g_pDslhDmlAgent;
 
 **********************************************************************/
 ULONG
-CosaGetParamValueUlong
-    (
-        char*                       pParamName
-    )
+CosaGetParamValueUlong(
+    char *pParamName)
 {
     /* we should look up CR to find right component.
             if it's P&M component, we just call the global variable
@@ -145,21 +142,16 @@ CosaGetParamValueUlong
     return:     0 = SUCCESS; -1 = FAILURE; 1 = NEW_SIZE;
 
 **********************************************************************/
-int
-CosaGetParamValueString
-    (
-        char*                       pParamName,
-        char*                       pBuffer,
-        PULONG                      pulSize
-    )
+int CosaGetParamValueString(
+    char *pParamName,
+    char *pBuffer,
+    PULONG pulSize)
 {
     /* we should look up CR to find right component.
             if it's P&M component, we just call the global variable
             Currently, we suppose all the parameter is from P&M. */
 
-
     return g_GetParamValueString(g_pDslhDmlAgent, pParamName, pBuffer, pulSize);
-
 }
 
 /**********************************************************************
@@ -187,37 +179,32 @@ CosaGetParamValueString
 
 **********************************************************************/
 ULONG
-CosaGetInstanceNumberByIndex
-    (
-        char*                      pObjName,
-        ULONG                      ulIndex
-    )
+CosaGetInstanceNumberByIndex(
+    char *pObjName,
+    ULONG ulIndex)
 {
     /* we should look up CR to find right component.
             if it's P&M component, we just call the global variable
             Currently, we suppose all the parameter is from P&M. */
 
-
     return g_GetInstanceNumberByIndex(g_pDslhDmlAgent, pObjName, ulIndex);
 }
 
-char*
-CosaGetInterfaceAddrByName
-    (
-        char*                      pInterfaceName
-    )
+char *
+CosaGetInterfaceAddrByName(
+    char *pInterfaceName)
 {
     int ret = 0;
     int size = 0;
-    char * dst_componentid =  NULL;
-    char * dst_pathname    =  NULL;
-    componentStruct_t ** ppComponents = NULL;
+    char *dst_componentid = NULL;
+    char *dst_pathname = NULL;
+    componentStruct_t **ppComponents = NULL;
     char dst_pathname_cr[128] = {0};
-    char * parameterNames[1];
-    parameterValStruct_t ** parameterVal = NULL;
-    char* pReturnName = NULL;
+    char *parameterNames[1];
+    parameterValStruct_t **parameterVal = NULL;
+    char *pReturnName = NULL;
 
-    if ( g_Subsystem[0] != 0 )
+    if (g_Subsystem[0] != 0)
     {
         _ansc_sprintf(dst_pathname_cr, "%s%s", g_Subsystem, CCSP_DBUS_INTERFACE_CR);
     }
@@ -226,7 +213,7 @@ CosaGetInterfaceAddrByName
         _ansc_sprintf(dst_pathname_cr, "%s", CCSP_DBUS_INTERFACE_CR);
     }
 
-    if ( !pInterfaceName || AnscSizeOfString(pInterfaceName) == 0 )
+    if (!pInterfaceName || AnscSizeOfString(pInterfaceName) == 0)
     {
         CcspTraceInfo(("Interface is NULL!\n"));
 
@@ -234,45 +221,43 @@ CosaGetInterfaceAddrByName
     }
     else
     {
-        ret = CcspBaseIf_discComponentSupportingNamespace
-            (
-                g_MessageBusHandle,
-                dst_pathname_cr,
-                pInterfaceName,
-                "",
-                &ppComponents,
-                &size
-            );
+        ret = CcspBaseIf_discComponentSupportingNamespace(
+            g_MessageBusHandle,
+            dst_pathname_cr,
+            pInterfaceName,
+            "",
+            &ppComponents,
+            &size);
 
-        if ( ret == CCSP_SUCCESS )
+        if (ret == CCSP_SUCCESS)
         {
             /*
             printf("componentName:%s dbusPath:%s %s %s %d\n", ppComponents[0]->componentName, ppComponents[0]->dbusPath, ppComponents[0]->remoteCR_dbus_path,
                 ppComponents[0]->remoteCR_name, ppComponents[0]->type );
                 */
-          dst_componentid = ppComponents[0]->componentName;
-          ppComponents[0]->componentName = NULL;
-          dst_pathname    = ppComponents[0]->dbusPath;
-          ppComponents[0]->dbusPath = NULL;
+            dst_componentid = ppComponents[0]->componentName;
+            ppComponents[0]->componentName = NULL;
+            dst_pathname = ppComponents[0]->dbusPath;
+            ppComponents[0]->dbusPath = NULL;
 
-          while( size )
-          {
-              if (ppComponents[size-1]->remoteCR_dbus_path)
-                AnscFreeMemory(ppComponents[size-1]->remoteCR_dbus_path);
+            while (size)
+            {
+                if (ppComponents[size - 1]->remoteCR_dbus_path)
+                    AnscFreeMemory(ppComponents[size - 1]->remoteCR_dbus_path);
 
-              if (ppComponents[size-1]->remoteCR_name)
-                AnscFreeMemory(ppComponents[size-1]->remoteCR_name);
+                if (ppComponents[size - 1]->remoteCR_name)
+                    AnscFreeMemory(ppComponents[size - 1]->remoteCR_name);
 
-              if ( ppComponents[size-1]->componentName )
-                AnscFreeMemory( ppComponents[size-1]->componentName );
+                if (ppComponents[size - 1]->componentName)
+                    AnscFreeMemory(ppComponents[size - 1]->componentName);
 
-              if ( ppComponents[size-1]->dbusPath )
-                AnscFreeMemory( ppComponents[size-1]->dbusPath );
+                if (ppComponents[size - 1]->dbusPath)
+                    AnscFreeMemory(ppComponents[size - 1]->dbusPath);
 
-              AnscFreeMemory(ppComponents[size-1]);
+                AnscFreeMemory(ppComponents[size - 1]);
 
-              size--;
-          }
+                size--;
+            }
         }
         else
         {
@@ -283,18 +268,16 @@ CosaGetInterfaceAddrByName
 
         parameterNames[0] = pInterfaceName;
 
-        ret = CcspBaseIf_getParameterValues
-                  (
-                      g_MessageBusHandle,
-                      dst_componentid,
-                      dst_pathname,
-                      parameterNames,
-                      1,
-                      &size ,
-                      &parameterVal
-                  );
+        ret = CcspBaseIf_getParameterValues(
+            g_MessageBusHandle,
+            dst_componentid,
+            dst_pathname,
+            parameterNames,
+            1,
+            &size,
+            &parameterVal);
 
-        if ( ret == CCSP_SUCCESS && size == 1 )
+        if (ret == CCSP_SUCCESS && size == 1)
         {
             pReturnName = AnscCloneString(parameterVal[0]->parameterValue);
 
@@ -310,7 +293,6 @@ CosaGetInterfaceAddrByName
 
             goto EXIT2;
         }
-
     }
 
 EXIT2:
@@ -321,7 +303,6 @@ EXIT1:
 
     return pReturnName;
 }
-
 
 /**********************************************************************
 
@@ -336,7 +317,7 @@ EXIT1:
 
         This function is called to retrieve RootFolder;
 
-    argument:   
+    argument:
             char*                       pParamName
             The full name of the parameter;
 
@@ -344,10 +325,7 @@ EXIT1:
 
 **********************************************************************/
 void *
-CosaGetRegistryRootFolder
-    (
-    )
+CosaGetRegistryRootFolder()
 {
     return g_GetRegistryRootFolder(g_pDslhDmlAgent);
 }
-

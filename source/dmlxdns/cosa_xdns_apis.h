@@ -15,7 +15,7 @@
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
  * See the License for the specific language governing permissions and
  * limitations under the License.
-*/
+ */
 
 #include "cosa_apis.h"
 #include "dslh_definitions_tr143.h"
@@ -26,128 +26,116 @@
 
 #define MAX_BUF_SIZE 256
 #define MAX_XDNS_SERV 2
-//mandate Dual stack by turning on this
+// mandate Dual stack by turning on this
 #define FEATURE_IPV6 1
 
 #ifdef FEATURE_IPV6
-#define XDNS_ENTRY_FORMAT  "%63s %63s %63s %63s %63s"
+#define XDNS_ENTRY_FORMAT "%63s %63s %63s %63s %63s"
 #else
-#define XDNS_ENTRY_FORMAT  "%63s %63s %63s %63s"
+#define XDNS_ENTRY_FORMAT "%63s %63s %63s %63s"
 #endif
 
-#define  COSA_CONTEXT_XDNS_LINK_CLASS_CONTENT                                  \
-        COSA_CONTEXT_LINK_CLASS_CONTENT                                            \
-        BOOL                            bFound;                                    \
-
+#define COSA_CONTEXT_XDNS_LINK_CLASS_CONTENT \
+    COSA_CONTEXT_LINK_CLASS_CONTENT          \
+    BOOL bFound;
 
 /***********************************
     Actual definition declaration
 ************************************/
-#define  COSA_IREP_FOLDER_NAME_XDNS                       "Xdns"
-#define  COSA_DML_RR_NAME_NATNextInsNumber               "NextInstanceNumber"
-#define  COSA_DML_RR_NAME_NATAlias                       "Alias"
-#define  COSA_DML_RR_NAME_NATbNew                        "bNew"
+#define COSA_IREP_FOLDER_NAME_XDNS "Xdns"
+#define COSA_DML_RR_NAME_NATNextInsNumber "NextInstanceNumber"
+#define COSA_DML_RR_NAME_NATAlias "Alias"
+#define COSA_DML_RR_NAME_NATbNew "bNew"
 
 #ifdef WAN_FAILOVER_SUPPORTED
 #include "ccsp_psm_helper.h"
 #define PSM_MESH_WAN_IFNAME "dmsb.Mesh.WAN.Interface.Name"
 #define PSM_VALUE_GET_STRING(name, str) PSM_Get_Record_Value2(bus_handle, "eRT.", name, NULL, &(str))
-#endif //WAN_FAILOVER_SUPPORTED
+#endif // WAN_FAILOVER_SUPPORTED
 
 /*
 typedef enum _PingServerType
 {
-	PingServerType_IPv4 = 0,
-	PingServerType_IPv6
+    PingServerType_IPv4 = 0,
+    PingServerType_IPv6
 } PingServerType;
 */
 
-typedef  struct
-_COSA_CONTEXT_XDNS_LINK_OBJECT
+typedef struct
+    _COSA_CONTEXT_XDNS_LINK_OBJECT
 {
     COSA_CONTEXT_XDNS_LINK_CLASS_CONTENT
-}
-COSA_CONTEXT_XDNS_LINK_OBJECT,  *PCOSA_CONTEXT_XDNS_LINK_OBJECT;
+} COSA_CONTEXT_XDNS_LINK_OBJECT, *PCOSA_CONTEXT_XDNS_LINK_OBJECT;
 
-typedef  struct
-_COSA_DML_XDNS_MACDNS_MAPPING_ENTRY
+typedef struct
+    _COSA_DML_XDNS_MACDNS_MAPPING_ENTRY
 {
-    ULONG                           InstanceNumber;
-    CHAR                            MacAddress[256];  /* MacAddress string address */
-    BOOL                            MacAddressChanged;
-    CHAR                            DnsIPv4[256];  /* IPv4 or IPv4 string address */
-    BOOL                            DnsIPv4Changed;
-    CHAR                            DnsIPv6[256];  /* IPv6 or IPv6 string address */
-    BOOL                            DnsIPv6Changed;
-    CHAR                            Tag[256];  /* Tag string address */
-    BOOL                            TagChanged;
-}
-COSA_DML_XDNS_MACDNS_MAPPING_ENTRY,  *PCOSA_DML_XDNS_MACDNS_MAPPING_ENTRY;
+    ULONG InstanceNumber;
+    CHAR MacAddress[256]; /* MacAddress string address */
+    BOOL MacAddressChanged;
+    CHAR DnsIPv4[256]; /* IPv4 or IPv4 string address */
+    BOOL DnsIPv4Changed;
+    CHAR DnsIPv6[256]; /* IPv6 or IPv6 string address */
+    BOOL DnsIPv6Changed;
+    CHAR Tag[256]; /* Tag string address */
+    BOOL TagChanged;
+} COSA_DML_XDNS_MACDNS_MAPPING_ENTRY, *PCOSA_DML_XDNS_MACDNS_MAPPING_ENTRY;
 
-typedef  struct
-_PCOSA_DML_MAPPING_CONTAINER
+typedef struct
+    _PCOSA_DML_MAPPING_CONTAINER
 {
-    ULONG                      	    XDNSEntryCount;
-    PCOSA_DML_XDNS_MACDNS_MAPPING_ENTRY    pXDNSTable;
-}
-COSA_DML_MAPPING_CONTAINER,  *PCOSA_DML_MAPPING_CONTAINER;
+    ULONG XDNSEntryCount;
+    PCOSA_DML_XDNS_MACDNS_MAPPING_ENTRY pXDNSTable;
+} COSA_DML_MAPPING_CONTAINER, *PCOSA_DML_MAPPING_CONTAINER;
 
-#define  COSA_DATAMODEL_XDNS_CLASS_CONTENT                                                  \
-    /* duplication of the base object class content */                                      \
-    COSA_BASE_CONTENT                                                                       \
-	ULONG                       MaxInstanceNumber;                                    \
-	ULONG                       ulXDNSNextInstanceNumber;                                    \
-    CHAR                        DefaultDeviceDnsIPv4[256];                                         \
-    BOOL                        DefaultDeviceDnsIPv4Changed;                                         \
-    CHAR                        DefaultDeviceDnsIPv6[256];                                         \
-    BOOL                        DefaultDeviceDnsIPv6Changed;                                         \
-    CHAR                        DefaultSecondaryDeviceDnsIPv4[256];                                         \
-    BOOL                        DefaultSecondaryDeviceDnsIPv4Changed;                                         \
-    CHAR                        DefaultSecondaryDeviceDnsIPv6[256];                                         \
-    BOOL                        DefaultSecondaryDeviceDnsIPv6Changed;                                         \
-    CHAR                        DefaultDeviceTag[256];                                            \
-    BOOL                        DefaultDeviceTagChanged;                                         \
-    SLIST_HEADER                XDNSDeviceList;                                        \
-    PCOSA_DML_MAPPING_CONTAINER    pMappingContainer;                                        \
-	ANSC_HANDLE                     hIrepFolderXdns;                                         \
-    ANSC_HANDLE                     hIrepFolderXdnsMapCont;                                       \
-    /* end of Diagnostic object class content */                                                    \
+#define COSA_DATAMODEL_XDNS_CLASS_CONTENT              \
+    /* duplication of the base object class content */ \
+    COSA_BASE_CONTENT                                  \
+    ULONG MaxInstanceNumber;                           \
+    ULONG ulXDNSNextInstanceNumber;                    \
+    CHAR DefaultDeviceDnsIPv4[256];                    \
+    BOOL DefaultDeviceDnsIPv4Changed;                  \
+    CHAR DefaultDeviceDnsIPv6[256];                    \
+    BOOL DefaultDeviceDnsIPv6Changed;                  \
+    CHAR DefaultSecondaryDeviceDnsIPv4[256];           \
+    BOOL DefaultSecondaryDeviceDnsIPv4Changed;         \
+    CHAR DefaultSecondaryDeviceDnsIPv6[256];           \
+    BOOL DefaultSecondaryDeviceDnsIPv6Changed;         \
+    CHAR DefaultDeviceTag[256];                        \
+    BOOL DefaultDeviceTagChanged;                      \
+    SLIST_HEADER XDNSDeviceList;                       \
+    PCOSA_DML_MAPPING_CONTAINER pMappingContainer;     \
+    ANSC_HANDLE hIrepFolderXdns;                       \
+    ANSC_HANDLE hIrepFolderXdnsMapCont;                \
+    /* end of Diagnostic object class content */
 
-
-typedef  struct
-_COSA_DATAMODEL_XDNS
+typedef struct
+    _COSA_DATAMODEL_XDNS
 {
     COSA_DATAMODEL_XDNS_CLASS_CONTENT
-}
-COSA_DATAMODEL_XDNS,  *PCOSA_DATAMODEL_XDNS;
+} COSA_DATAMODEL_XDNS, *PCOSA_DATAMODEL_XDNS;
 
-#define  ACCESS_COSA_CONTEXT_XDNS_LINK_OBJECT(p)              \
-         ACCESS_CONTAINER(p, COSA_CONTEXT_XDNS_LINK_OBJECT, Linkage)
+#define ACCESS_COSA_CONTEXT_XDNS_LINK_OBJECT(p) \
+    ACCESS_CONTAINER(p, COSA_CONTEXT_XDNS_LINK_OBJECT, Linkage)
 
 /**********************************
     Standard function declaration
 ***********************************/
 ANSC_HANDLE
-CosaXDNSCreate
-    (
-        VOID
-    );
+CosaXDNSCreate(
+    VOID);
 
 ANSC_STATUS
-CosaXDNSInitialize
-    (
-        ANSC_HANDLE                 hThisObject
-    );
+CosaXDNSInitialize(
+    ANSC_HANDLE hThisObject);
 
 ANSC_STATUS
-CosaXDNSRemove
-    (
-        ANSC_HANDLE                 hThisObject
-    );
+CosaXDNSRemove(
+    ANSC_HANDLE hThisObject);
 
-void GetDnsMasqFileEntry(char* macaddress, char (*defaultEntry)[MAX_BUF_SIZE]);
+void GetDnsMasqFileEntry(char *macaddress, char (*defaultEntry)[MAX_BUF_SIZE]);
 void CreateDnsmasqServerConf(PCOSA_DATAMODEL_XDNS pMyObject);
-void ReplaceDnsmasqConfEntry(char* macaddress, char (*overrideEntry)[MAX_BUF_SIZE], int count);
+void ReplaceDnsmasqConfEntry(char *macaddress, char (*overrideEntry)[MAX_BUF_SIZE], int count);
 void ResetDnsmasqConfFile();
 void AppendDnsmasqConfEntry(char (*string1)[MAX_BUF_SIZE], int count);
 void RefreshResolvConfEntry();
