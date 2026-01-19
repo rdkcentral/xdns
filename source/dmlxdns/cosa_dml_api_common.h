@@ -129,14 +129,23 @@ COSA_DML_STATUS, *PCOSA_DML_STATUS;
 
 bool is_bci_partner(void);
 
-#define ONESTACK_PRODUCT_CHECK if (is_bci_partner()) \
+/* Business Gateway - runtime partner check */
+#define BCI_PRODUCT_CHECK if (is_bci_partner()) \
      {
 
-#define ONESTACK_PRODUCT_CHECK_END }
+#define BCI_PRODUCT_CHECK_END }
+
+/* Residential Gateway - runtime partner check (inverse) */
+#define RES_PRODUCT_CHECK if (!is_bci_partner()) \
+     {
+
+#define RES_PRODUCT_CHECK_END }
 
 #else
-#define ONESTACK_PRODUCT_CHECK
-#define ONESTACK_PRODUCT_CHECK_END
+#define BCI_PRODUCT_CHECK
+#define BCI_PRODUCT_CHECK_END
+#define RES_PRODUCT_CHECK
+#define RES_PRODUCT_CHECK_END
 #endif
 
 #endif
