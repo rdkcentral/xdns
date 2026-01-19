@@ -631,16 +631,16 @@ int apply_XDNS_cache_ToDB(xdns_cache *tmp_xdns_cache)
         	}
         	else
         	{
-#ifdef _CBR_PRODUCT_REQ_
-                	if (syscfg_set(NULL, "XDNS_DNSSecEnable", setval) != 0)
-                	{
-				fprintf(stderr, "%s syscfg_set XDNS_DNSSecEnable failed %d !!!\n",__FUNCTION__,tmp_xdns_cache->XdnsEnable);
-                	}
-                	else
-                	{
-                        	fprintf(stderr, "%s XDNS_DNSSecEnable value is set to %d in DB\n",__FUNCTION__,tmp_xdns_cache->XdnsEnable);
-               		}
-#endif        
+                ONESTACK_PRODUCT_CHECK
+                    if (syscfg_set(NULL, "XDNS_DNSSecEnable", setval) != 0)
+                    {
+                        fprintf(stderr, "%s syscfg_set XDNS_DNSSecEnable failed %d !!!\n",__FUNCTION__,tmp_xdns_cache->XdnsEnable);
+                    }
+                    else
+                    {
+                        fprintf(stderr, "%s XDNS_DNSSecEnable value is set to %d in DB\n",__FUNCTION__,tmp_xdns_cache->XdnsEnable);
+                    }
+                ONESTACK_PRODUCT_CHECK_END
                 	if (syscfg_commit() != 0)
                 	{
 				fprintf(stderr, "%s syscfg_commit X_RDKCENTRAL-COM_XDNS failed!!!\n",__FUNCTION__);

@@ -125,6 +125,19 @@ _COSA_DML_STATUS
 }
 COSA_DML_STATUS, *PCOSA_DML_STATUS;
 
+#ifdef _ONESTACK_PRODUCT_REQ_
+
+bool is_bci_partner(void);
+
+#define ONESTACK_PRODUCT_CHECK if (is_bci_partner()) \
+     {
+
+#define ONESTACK_PRODUCT_CHECK_END }
+
+#else
+#define ONESTACK_PRODUCT_CHECK
+#define ONESTACK_PRODUCT_CHECK_END
+#endif
 
 #endif
 

@@ -533,13 +533,12 @@ void RefreshResolvConfEntry()
 			continue;
 		}
 
-#if defined(_COSA_FOR_BCI_)
-
-            if ( strstr(resolvConfEntry, "XDNS_Multi_Profile"))
-                {
-                        continue;
-                }
-#endif
+        ONESTACK_PRODUCT_CHECK
+            if (strstr(resolvConfEntry, "XDNS_Multi_Profile"))
+            {
+                continue;
+            }
+        ONESTACK_PRODUCT_CHECK_END
 
     	// write non dnsoverride entries to temp file
         fprintf(fp2, "%s", resolvConfEntry);
@@ -603,22 +602,20 @@ void RefreshResolvConfEntry()
     	fprintf(fp2, "%s", dnsmasqConfEntry);
     }
 
-#if defined(_COSA_FOR_BCI_)
-
-    char multiprofile_flag[5]={0};
-    syscfg_get(NULL, "MultiProfileXDNS", multiprofile_flag, sizeof(multiprofile_flag));
-    if( multiprofile_flag[0] == '1' &&  multiprofile_flag[1] == '\0')
-    {
-        fprintf(fp2, "XDNS_Multi_Profile Enabled\n");
-        fprintf(stderr,"## CcspXDNS #### Multi Profile XDNS feature is Enabled\n");
-    }
-    else
-    {
-        fprintf(fp2, "XDNS_Multi_Profile Disabled\n");
-        fprintf(stderr,"## CcspXDNS #### Multi Profile XDNS feature is disabled\n");
-    }
-
-#endif
+        ONESTACK_PRODUCT_CHECK
+            char multiprofile_flag[5]={0};
+            syscfg_get(NULL, "MultiProfileXDNS", multiprofile_flag, sizeof(multiprofile_flag));
+            if( multiprofile_flag[0] == '1' &&  multiprofile_flag[1] == '\0')
+            {
+                fprintf(fp2, "XDNS_Multi_Profile Enabled\n");
+                fprintf(stderr,"## CcspXDNS #### Multi Profile XDNS feature is Enabled\n");
+            }
+            else
+            {
+                fprintf(fp2, "XDNS_Multi_Profile Disabled\n");
+                fprintf(stderr,"## CcspXDNS #### Multi Profile XDNS feature is disabled\n");
+            }
+        ONESTACK_PRODUCT_CHECK_END
 
     // at this point the temp file has entries from resolv.conf and dnsmasq_server.conf
     // close all files and reopen to read from temp and write to resolv.conf
@@ -1576,13 +1573,12 @@ int SetXdnsConfig()
                         continue;
                 }
 
-#if defined(_COSA_FOR_BCI_)
-
-            if ( strstr(confEntry, "XDNS_Multi_Profile"))
-                {
-                        continue;
-                }
-#endif
+        ONESTACK_PRODUCT_CHECK
+            if (strstr(confEntry, "XDNS_Multi_Profile"))
+            {
+                continue;
+            }
+        ONESTACK_PRODUCT_CHECK_END
 
         // write resolv.conf entries to temp file
                 printf("############ SetXdnsConfig() copy entry from resolv to temp: [%s]\n", confEntry);
@@ -1677,8 +1673,7 @@ int SetXdnsConfig()
                 }
         }
 
-#if defined(_COSA_FOR_BCI_)
-
+    ONESTACK_PRODUCT_CHECK
         char multiprofile_flag[5]={0};
         syscfg_get(NULL, "MultiProfileXDNS", multiprofile_flag, sizeof(multiprofile_flag));
         if( multiprofile_flag[0] == '1' &&  multiprofile_flag[1] == '\0')
@@ -1691,8 +1686,7 @@ int SetXdnsConfig()
             fprintf(fp3, "XDNS_Multi_Profile Disabled\n");
             fprintf(stderr,"## CcspXDNS #### Multi Profile XDNS feature is disabled\n");
         }
-
-#endif
+    ONESTACK_PRODUCT_CHECK_END
 
         fclose(fp3); fp3 = NULL;
         fclose(fp2); fp2 = NULL;
@@ -1801,13 +1795,12 @@ int UnsetXdnsConfig()
                         continue; //skip
                 }
 
-#if defined(_COSA_FOR_BCI_)
-
-            if ( strstr(confEntry, "XDNS_Multi_Profile"))
-                {
-                        continue;
-                }
-#endif
+        ONESTACK_PRODUCT_CHECK
+            if (strstr(confEntry, "XDNS_Multi_Profile"))
+            {
+                continue;
+            }
+        ONESTACK_PRODUCT_CHECK_END
 
                 printf("############ UnsetXdnsConfig() saving from resolv.conf to bak [%s]\n", confEntry);
                 fprintf(fp3, "%s", confEntry);
