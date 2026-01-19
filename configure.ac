@@ -58,6 +58,16 @@ AC_ARG_ENABLE([core_net_lib_feature_support],
 esac],[core_net_lib_feature_support=false])
 AM_CONDITIONAL(CORE_NET_LIB_FEATURE_SUPPORT, test x"$core_net_lib_feature_support" = x"true")
 
+# Checks for OneStack Product Requirement
+AC_ARG_ENABLE([onestack],
+[  --enable-onestack    Turn on OneStack Product Requirement],
+[case "${enableval}" in
+  yes) onestack=true ;;
+  no)  onestack=false ;;
+  *) AC_MSG_ERROR([bad value ${enableval} for --enable-onestack]) ;;
+esac],[onestack=false])
+AM_CONDITIONAL([ONESTACK_PRODUCT_REQ], [test x$onestack = xtrue])
+
 AC_PREFIX_DEFAULT(`pwd`)
 AC_ENABLE_SHARED
 AC_DISABLE_STATIC

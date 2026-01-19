@@ -31,3 +31,7 @@ libdmlxdns_la_LDFLAGS = -lccsp_common -lsyscfg -lsysevent -lutapi -lutctx -lwebc
 if CORE_NET_LIB_FEATURE_SUPPORT
 libdmlxdns_la_LDFLAGS += -lnet
 endif
+
+if ONESTACK_PRODUCT_REQ
+AM_CFLAGS += -D_ONESTACK_PRODUCT_REQ_
+endif
