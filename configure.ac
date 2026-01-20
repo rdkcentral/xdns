@@ -65,7 +65,7 @@ AC_ARG_ENABLE([onestack],
   yes) onestack=true ;;
   no)  onestack=false ;;
   *) AC_MSG_ERROR([bad value ${enableval} for --enable-onestack]) ;;
-esac],[onestack=false])
+esac],[onestack=true])
 AM_CONDITIONAL([ONESTACK_PRODUCT_REQ], [test x$onestack = xtrue])
 
 AC_PREFIX_DEFAULT(`pwd`)
