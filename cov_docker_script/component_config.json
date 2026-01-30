@@ -94,9 +94,16 @@
     "name": "xdns",
     "include_path": "$HOME/usr/include/rdkb/",
     "lib_output_path": "$HOME/usr/local/lib/",
+    "pre_build_commands": [
+      {
+        "description": "Generate dm_pack_datamodel.c from XML",
+        "command": "python3 $HOME/usr/include/rdkb/dm_pack_code_gen.py config/CcspXdns_dm.xml source/XdnsSsp/dm_pack_datamodel.c"
+      }
+    ],
     "build": {
       "type": "autotools",
       "configure_options_file": "cov_docker_script/configure_options.conf"
     }
   }
 }
+
