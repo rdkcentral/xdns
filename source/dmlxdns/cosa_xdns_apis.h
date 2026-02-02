@@ -156,5 +156,5 @@ int UnsetXdnsConfig();
 int isValidIPv4Address(char *ipAddress);
 int isValidIPv6Address(char *ipAddress);
 #if defined(_ONESTACK_PRODUCT_REQ_)
-bool is_bci_partner(void);
+bool is_business_stack(void);
 #endif // _ONESTACK_PRODUCT_REQ_
