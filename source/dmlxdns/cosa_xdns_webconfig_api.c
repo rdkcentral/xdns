@@ -633,7 +633,7 @@ int apply_XDNS_cache_ToDB(xdns_cache *tmp_xdns_cache)
         	{
 #if defined(_CBR_PRODUCT_REQ_) || defined(_ONESTACK_PRODUCT_REQ_)
 #if defined(_ONESTACK_PRODUCT_REQ_)
-            if (is_business_stack())
+            if (is_devicemode_business())
 #endif // _ONESTACK_PRODUCT_REQ_
             {
                 if (syscfg_set(NULL, "XDNS_DNSSecEnable", setval) != 0)
@@ -691,7 +691,7 @@ int set_xdns_conf(xdnsdoc_t *xd, xdns_cache *tmp_xdns_cache)
 	}
 #if !defined(_COSA_FOR_BCI_) || defined(_ONESTACK_PRODUCT_REQ_)
 #if defined(_ONESTACK_PRODUCT_REQ_)
-    else if (!is_business_stack() &&
+    else if (!is_devicemode_business() &&
              ((!strncmp(xd->default_ipv4, USE_RDK_DEFAULT_STRING, sizeof(USE_RDK_DEFAULT_STRING)) && (INVALID_IP != CheckIfIpIsValid(xd->default_ipv6))) ||
               ((INVALID_IP != CheckIfIpIsValid(xd->default_ipv4)) && (!strncmp(xd->default_ipv6, USE_RDK_DEFAULT_STRING, sizeof(USE_RDK_DEFAULT_STRING)))) ||
               ((!strncmp(xd->default_ipv4, USE_RDK_DEFAULT_STRING, sizeof(USE_RDK_DEFAULT_STRING))) && (!strncmp(xd->default_ipv6, USE_RDK_DEFAULT_STRING, sizeof(USE_RDK_DEFAULT_STRING))))))
@@ -778,7 +778,7 @@ int set_xdns_conf(xdnsdoc_t *xd, xdns_cache *tmp_xdns_cache)
         	}
 #if defined(_COSA_FOR_BCI_) || defined(_ONESTACK_PRODUCT_REQ_)
 #if defined(_ONESTACK_PRODUCT_REQ_)
-        else if (is_business_stack() &&
+        else if (is_devicemode_business() &&
                  ((!strncmp(xd->table_param->entries[i].dns_ipv4, USE_RDK_DEFAULT_STRING, sizeof(USE_RDK_DEFAULT_STRING)) && (INVALID_IP != CheckIfIpIsValid(xd->table_param->entries[i].dns_ipv6))) ||
                   ((INVALID_IP != CheckIfIpIsValid(xd->table_param->entries[i].dns_ipv4)) && (!strncmp(xd->table_param->entries[i].dns_ipv6, USE_RDK_DEFAULT_STRING, sizeof(USE_RDK_DEFAULT_STRING)))) ||
                   ((!strncmp(xd->table_param->entries[i].dns_ipv4, USE_RDK_DEFAULT_STRING, sizeof(USE_RDK_DEFAULT_STRING))) && (!strncmp(xd->table_param->entries[i].dns_ipv6, USE_RDK_DEFAULT_STRING, sizeof(USE_RDK_DEFAULT_STRING))))))

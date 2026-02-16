@@ -105,23 +105,6 @@ extern ANSC_HANDLE bus_handle;
 
 void* MonitorResolvConfForChanges(void *arg);
 
-#if defined(_ONESTACK_PRODUCT_REQ_)
-#define BUFLEN_32 32
-static char stackMode[BUFLEN_32] = {0};
-
-bool is_business_stack(void)
-{
-    if (stackMode[0] == '\0')
-    {
-        if (syscfg_get(NULL, "stackmode", stackMode, sizeof(stackMode)) != 0)
-        {
-            return false;
-        }
-    }
-    return strcmp(stackMode, "business") == 0;
-}
-#endif // _ONESTACK_PRODUCT_REQ_
-
 STATIC void eventReceiveHandler(
     rbusHandle_t handle,
     rbusEvent_t const* event,
@@ -552,7 +535,7 @@ void RefreshResolvConfEntry()
 
 #if defined(_COSA_FOR_BCI_) || defined(_ONESTACK_PRODUCT_REQ_)
 #if defined(_ONESTACK_PRODUCT_REQ_)
-            if (is_business_stack())
+            if (is_devicemode_business())
 #endif // _ONESTACK_PRODUCT_REQ_
             {
                 if (strstr(resolvConfEntry, "XDNS_Multi_Profile"))
@@ -626,7 +609,7 @@ void RefreshResolvConfEntry()
 
 #if defined(_COSA_FOR_BCI_) || defined(_ONESTACK_PRODUCT_REQ_)
 #if defined(_ONESTACK_PRODUCT_REQ_)
-        if (is_business_stack())
+        if (is_devicemode_business())
 #endif // _ONESTACK_PRODUCT_REQ_
         {
             char multiprofile_flag[5] = {0};
@@ -1602,7 +1585,7 @@ int SetXdnsConfig()
 
 #if defined(_COSA_FOR_BCI_) || defined(_ONESTACK_PRODUCT_REQ_)
 #if defined(_ONESTACK_PRODUCT_REQ_)
-        if (is_business_stack())
+        if (is_devicemode_business())
 #endif // _ONESTACK_PRODUCT_REQ_
         {
             if (strstr(confEntry, "XDNS_Multi_Profile"))
@@ -1707,7 +1690,7 @@ int SetXdnsConfig()
 
 #if defined(_COSA_FOR_BCI_) || defined(_ONESTACK_PRODUCT_REQ_)
 #if defined(_ONESTACK_PRODUCT_REQ_)
-    if (is_business_stack())
+    if (is_devicemode_business())
 #endif // _ONESTACK_PRODUCT_REQ_
     {
         char multiprofile_flag[5] = {0};
@@ -1834,7 +1817,7 @@ int UnsetXdnsConfig()
 
 #if defined(_COSA_FOR_BCI_) || defined(_ONESTACK_PRODUCT_REQ_)
 #if defined(_ONESTACK_PRODUCT_REQ_)
-        if (is_business_stack())
+        if (is_devicemode_business())
 #endif // _ONESTACK_PRODUCT_REQ_
         {
             if (strstr(confEntry, "XDNS_Multi_Profile"))

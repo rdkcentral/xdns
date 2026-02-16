@@ -291,7 +291,7 @@ CcspXdnsConsoleTrace(("RDK_LOG_DEBUG, Xdns %s : ENTER \n", __FUNCTION__ ));
         {
 #if defined(_CBR_PRODUCT_REQ_) || defined(_ONESTACK_PRODUCT_REQ_)
 #if defined(_ONESTACK_PRODUCT_REQ_)
-            if (is_business_stack())
+            if (is_devicemode_business())
 #endif // _ONESTACK_PRODUCT_REQ_
             {
                 if (syscfg_set(NULL, "XDNS_DNSSecEnable", bval) != 0)
@@ -638,7 +638,7 @@ XDNS_GetParamBoolValue
     {
 #if defined(_CBR_PRODUCT_REQ_) || defined(_ONESTACK_PRODUCT_REQ_)
 #if defined(_ONESTACK_PRODUCT_REQ_)
-        if (is_business_stack())
+        if (is_devicemode_business())
 #endif // _ONESTACK_PRODUCT_REQ_
         {
             char buf[5] = {0};
@@ -684,7 +684,7 @@ CcspXdnsConsoleTrace(("RDK_LOG_DEBUG, Xdns %s : ENTER \n", __FUNCTION__ ));
     {
 #if defined(_CBR_PRODUCT_REQ_) || defined(_ONESTACK_PRODUCT_REQ_)
 #if defined(_ONESTACK_PRODUCT_REQ_)
-        if (is_business_stack())
+        if (is_devicemode_business())
 #endif // _ONESTACK_PRODUCT_REQ_
         {
             char bval[2] = {0};
