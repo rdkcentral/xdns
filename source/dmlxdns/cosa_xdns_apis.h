@@ -150,6 +150,7 @@ void CreateDnsmasqServerConf(PCOSA_DATAMODEL_XDNS pMyObject);
 void ReplaceDnsmasqConfEntry(char* macaddress, char (*overrideEntry)[MAX_BUF_SIZE], int count);
 void ResetDnsmasqConfFile();
 void AppendDnsmasqConfEntry(char (*string1)[MAX_BUF_SIZE], int count);
+void RemoveDnsmasqConfEntry(char* macaddress);
 void RefreshResolvConfEntry();
 int SetXdnsConfig();
 int UnsetXdnsConfig();

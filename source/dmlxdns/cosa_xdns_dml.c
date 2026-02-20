@@ -1568,7 +1568,7 @@ DNSMappingTable_DelEntry
     PCOSA_DML_XDNS_MACDNS_MAPPING_ENTRY pDnsTableEntry      = (PCOSA_DML_XDNS_MACDNS_MAPPING_ENTRY)pXdnsCxtLink->hContext;
 	/* Remove entery from the database */
 
-    ReplaceDnsmasqConfEntry(pDnsTableEntry->MacAddress, NULL,1);
+    RemoveDnsmasqConfEntry(pDnsTableEntry->MacAddress);
 
     if ( returnStatus == ANSC_STATUS_SUCCESS )
 	{

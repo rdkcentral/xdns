@@ -854,6 +854,56 @@ void AppendDnsmasqConfEntry(char (*string1)[MAX_BUF_SIZE], int count)
 	return;
 }
 
+void RemoveDnsmasqConfEntry(char* macaddress)
+{
+    char dnsmasqConfEntry[256] = {0};
+    if (macaddress == NULL)
+    {
+        CcspTraceError(("%s macaddress NULL check\n", __FUNCTION__));
+        return;
+    }
+
+    //Step 1: Open text files and check that they open//
+    FILE *fp1 = NULL, *fp2 = NULL;
+
+    fp1 = fopen(DNSMASQ_SERVERS_CONF, "r");
+    if(fp1 == NULL) {
+        CcspTraceInfo(("%s - File Not Created %s\n", __FUNCTION__, DNSMASQ_SERVERS_CONF));
+        return;
+    }
+
+    fp2 = fopen(DNSMASQ_SERVERS_BAK , "r");
+    if (fp2 != NULL) {
+        fclose(fp2);
+        fp2 = NULL;
+        unlink(DNSMASQ_SERVERS_BAK);
+    }
+    fp2 = fopen(DNSMASQ_SERVERS_BAK , "a");
+    if(fp2 == NULL) {
+        CcspTraceError(("%s - Error reading file %s\n", __FUNCTION__, DNSMASQ_SERVERS_BAK));
+        fclose(fp1);
+        return;
+    }
+
+    //Step 2: Get text from original file//
+    while(fgets(dnsmasqConfEntry, sizeof(dnsmasqConfEntry), fp1) != NULL) {
+        // skip entry that match the mac addr, copy the rest to DNSMASQ_SERVERS_BAK
+        if(strstr(dnsmasqConfEntry, macaddress) != NULL) {
+            continue;
+        }
+        fprintf(fp2, "%s", dnsmasqConfEntry);
+    }
+    fclose(fp1);
+    unlink(DNSMASQ_SERVERS_CONF);
+    fclose(fp2);
+    if(rename(DNSMASQ_SERVERS_BAK, DNSMASQ_SERVERS_CONF) != 0 )
+        fprintf(stderr,"Error in renaming  file\n");
+    // update to resolv.conf file
+    RefreshResolvConfEntry();
+
+    return;
+}
+
 // Create Default dnsoverride entry (00:00:00:00:00:00) using nameserver entries from resolv.conf file
 void CreateDnsmasqServerConf(PCOSA_DATAMODEL_XDNS pMyObject)
 {
