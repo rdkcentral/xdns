@@ -16,10 +16,10 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 ##########################################################################
-AM_CFLAGS =
+AM_CFLAGS = -Wno-format
 AM_LDFLAGS = -lccsp_common -lwebconfig_framework -lmsgpackc -ltrower-base64
 
-AM_CPPFLAGS = -Wall -Werror
+AM_CPPFLAGS = -Wall -Wno-format
 ACLOCAL_AMFLAGS = -I m4
 hardware_platform = i686-linux-gnu
 

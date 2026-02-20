@@ -384,7 +384,7 @@ CosaUtilGetLowerLayers
                      {
                         _ansc_sprintf(ucEntryFullPath, "%s%lu", "Device.IP.Interface.", ulEntryInstanceNum);
 
-                        rc = sprintf_s(ucEntryParamName, sizeof(ucEntryParamName),"%s%s", ucEntryFullPath, ".Name");
+                        rc = sprintf_s(ucEntryParamName, sizeof(ucEntryParamName),"%s%s%s", ucEntryFullPath, ".Name");
 			if(rc < EOK) {
 			    ERR_CHK(rc);
 			}
