@@ -296,7 +296,7 @@ CcspXdnsConsoleTrace(("RDK_LOG_DEBUG, Xdns %s : ENTER \n", __FUNCTION__ ));
             {
                 if (syscfg_set(NULL, "XDNS_DNSSecEnable", bval) != 0)
                 {
-                    AnscTraceWarning(("[XDNS] syscfg_set XDNS_DNSSecEnable failed!\n"));
+                    CcspTraceError(("[XDNS] syscfg_set XDNS_DNSSecEnable failed!\n"));
                 }
                 else
                 {
@@ -675,8 +675,8 @@ XDNS_SetParamBoolValue
     UNREFERENCED_PARAMETER(bValue);
     errno_t                         rc                  = -1;
     int                             ind                 = -1;
-CcspXdnsConsoleTrace(("RDK_LOG_DEBUG, Xdns %s : ENTER \n", __FUNCTION__ ));
 
+    CcspXdnsConsoleTrace(("RDK_LOG_DEBUG, Xdns %s : ENTER \n", __FUNCTION__ ));
 
     rc = strcmp_s("DNSSecEnable", strlen("DNSSecEnable"), ParamName , &ind);
     ERR_CHK(rc);
@@ -696,17 +696,15 @@ CcspXdnsConsoleTrace(("RDK_LOG_DEBUG, Xdns %s : ENTER \n", __FUNCTION__ ));
             {
                 bval[0] = '0';
             }
-
             if (syscfg_set(NULL, "XDNS_DNSSecEnable", bval) != 0)
             {
-
-                CcspXdnsConsoleTrace(("RDK_LOG_DEBUG,%s syscfg_set XDNS_DNSSecEnable failed!!!!!\n", __FUNCTION__));
+                CcspTraceError(("%s syscfg_set XDNS_DNSSecEnable failed!!!!!\n", __FUNCTION__));
             }
             else
             {
                 if (syscfg_commit() != 0)
                 {
-                    CcspXdnsConsoleTrace(("RDK_LOG_DEBUG,%s syscfg_commit XDNS_DNSSecEnable failed!!!!\n", __FUNCTION__));
+                    CcspTraceError(("%s syscfg_commit XDNS_DNSSecEnable failed!!!!\n", __FUNCTION__));
                 }
                 else
                 {
@@ -716,6 +714,13 @@ CcspXdnsConsoleTrace(("RDK_LOG_DEBUG, Xdns %s : ENTER \n", __FUNCTION__ ));
                 }
             }
             return TRUE;
+        }
+#if defined(_ONESTACK_PRODUCT_REQ_)
+        if (!is_devicemode_business())
+#endif // _ONESTACK_PRODUCT_REQ_
+        {
+            CcspTraceInfo(("[XDNS] DNSSec feature not supported in residential mode\n"));
+            return FALSE;
         }
 #endif // _CBR_PRODUCT_REQ_ || _ONESTACK_PRODUCT_REQ_
     }
