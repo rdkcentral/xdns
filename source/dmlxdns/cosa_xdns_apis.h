@@ -54,6 +54,10 @@
 #define PSM_VALUE_GET_STRING(name, str) PSM_Get_Record_Value2(bus_handle, "eRT.", name, NULL, &(str))
 #endif //WAN_FAILOVER_SUPPORTED
 
+#if defined(_ONESTACK_PRODUCT_REQ_)
+#include "devicemode.h"
+#endif // _ONESTACK_PRODUCT_REQ_
+
 /*
 typedef enum _PingServerType
 {
@@ -156,6 +160,3 @@ int SetXdnsConfig();
 int UnsetXdnsConfig();
 int isValidIPv4Address(char *ipAddress);
 int isValidIPv6Address(char *ipAddress);
-#if defined(_ONESTACK_PRODUCT_REQ_)
-#include "devicemode.h"
-#endif // _ONESTACK_PRODUCT_REQ_
