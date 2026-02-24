@@ -717,11 +717,11 @@ XDNS_SetParamBoolValue
         }
 #if defined(_ONESTACK_PRODUCT_REQ_)
         if (!is_devicemode_business())
-#endif // _ONESTACK_PRODUCT_REQ_
         {
             CcspTraceInfo(("[XDNS] DNSSec feature not supported in residential mode\n"));
             return FALSE;
         }
+#endif // _ONESTACK_PRODUCT_REQ_
 #endif // _CBR_PRODUCT_REQ_ || _ONESTACK_PRODUCT_REQ_
     }
 
