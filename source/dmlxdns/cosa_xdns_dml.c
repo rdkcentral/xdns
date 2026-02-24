@@ -642,8 +642,7 @@ XDNS_GetParamBoolValue
 #endif // _ONESTACK_PRODUCT_REQ_
         {
             char buf[5] = {0};
-            syscfg_get(NULL, "XDNS_DNSSecEnable", buf, sizeof(buf));
-            if (buf != NULL)
+            if (syscfg_get(NULL, "XDNS_DNSSecEnable", buf, sizeof(buf)) == 0)
             {
                 int var = atoi(buf);
                 if (var)
