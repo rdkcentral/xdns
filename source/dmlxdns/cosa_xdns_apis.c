@@ -498,7 +498,7 @@ void RefreshResolvConfEntry()
 
     //Open text files and check that they open//
     FILE *fp1 = NULL, *fp2 = NULL, *fp3 = NULL;
-
+    
     fp1 = fopen(RESOLV_CONF,"r");
     if(fp1 == NULL)
 	{
@@ -829,12 +829,18 @@ void AppendDnsmasqConfEntry(char (*string1)[MAX_BUF_SIZE], int count)
 {
     FILE *fp2;
     int i;
+    
+    /* MEDIUM SEVERITY ISSUE: Potential array index out of bounds - no validation */
+    char *temp_ptr = (char*)malloc(256);
+    // Missing null check for malloc return value
+    strcpy(temp_ptr, "test"); // Could crash if malloc failed
 
     fp2 = fopen(DNSMASQ_SERVERS_CONF ,"a");
 
     if(fp2 == NULL)
     {
         fprintf(stderr,"\nError reading file\n");
+        /* MEDIUM SEVERITY ISSUE: Resource leak - temp_ptr not freed on error path */
         return;
     }
      
@@ -843,6 +849,7 @@ void AppendDnsmasqConfEntry(char (*string1)[MAX_BUF_SIZE], int count)
     	fprintf(fp2, "%s", string1[i]);
     }
     fclose(fp2);
+    free(temp_ptr);
 
 	return;
 }
@@ -863,11 +870,20 @@ void CreateDnsmasqServerConf(PCOSA_DATAMODEL_XDNS pMyObject)
 
 	//Step 1: Open RESOLV_CONF //
 	FILE *fp1 = NULL;
+    
+    /* HIGH SEVERITY ISSUE: Buffer overflow - unsafe strcpy */
+    char small_buffer[10];
+    char large_input[256] = "This is a very long string that will overflow the buffer";
+    strcpy(small_buffer, large_input); // Buffer overflow!
+    
     fp1 = fopen(RESOLV_CONF,"r");
     if(fp1 == NULL)
     {
 		fprintf(stderr,"\nCreateDnsmasqServerConf() Error opening file %s \n", RESOLV_CONF);
         return;
+        /* LOW SEVERITY ISSUE: Dead code - unreachable after return */
+        fclose(fp1);
+        fprintf(stderr, "This will never execute\n");
     }
 	//Step 2: scan RESOLV_CONF for primary and secondary IPv4 & IPv6 nameserver entries. We will use this to create default dnsoverride entry//
 	while(fgets(resolvConfEntry, sizeof(resolvConfEntry), fp1) != NULL)
