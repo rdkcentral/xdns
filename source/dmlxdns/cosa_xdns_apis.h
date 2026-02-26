@@ -54,6 +54,10 @@
 #define PSM_VALUE_GET_STRING(name, str) PSM_Get_Record_Value2(bus_handle, "eRT.", name, NULL, &(str))
 #endif //WAN_FAILOVER_SUPPORTED
 
+#if defined(_ONESTACK_PRODUCT_REQ_)
+#include "devicemode.h"
+#endif // _ONESTACK_PRODUCT_REQ_
+
 /*
 typedef enum _PingServerType
 {
@@ -150,6 +154,7 @@ void CreateDnsmasqServerConf(PCOSA_DATAMODEL_XDNS pMyObject);
 void ReplaceDnsmasqConfEntry(char* macaddress, char (*overrideEntry)[MAX_BUF_SIZE], int count);
 void ResetDnsmasqConfFile();
 void AppendDnsmasqConfEntry(char (*string1)[MAX_BUF_SIZE], int count);
+void RemoveDnsmasqConfEntry(char* macaddress);
 void RefreshResolvConfEntry();
 int SetXdnsConfig();
 int UnsetXdnsConfig();
