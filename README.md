@@ -2,7 +2,7 @@
 
 The XDNS (Extended DNS) component is a specialized RDK-B middleware component that provides advanced DNS management capabilities for RDK-B gateway devices. This component extends beyond traditional DNS functionality by implementing configurable DNS policies, security features, and integration with RDK-B's WebConfig framework for dynamic DNS configuration management. The XDNS component serves as a critical networking service that enables service providers to implement DNS-based content filtering, parental controls, and network security policies while maintaining compatibility with standard DNS protocols.
 
-The XDNS component operates as a middleware layer between the RDK-B networking stack and external DNS services, providing intelligent DNS request routing, caching, and policy enforcement. It integrates deeply with the RDK-B ecosystem through TR-181 data model support, WebConfig integration for cloud-based configuration management, and RBus messaging for real-time communication with other RDK-B components. The component supports both IPv4 and IPv6 DNS configurations and provides two-tier failover mechanisms for high availability: **multi-server DNS failover** (automatic switching between primary and secondary DNS servers when resolution failures occur) and **WAN interface failover** (automatic DNS reconfiguration when the active WAN interface changes from primary to backup connectivity such as cellular/LTE failover).
+The XDNS component operates as a middleware layer between the RDK-B networking stack and external DNS services. At its core, the component provides necessary DML support to configure `/etc/resolv.conf`, which is consumed by the dnsmasq process for DNS resolution services. It integrates deeply with the RDK-B ecosystem through TR-181 data model support, WebConfig integration for cloud-based configuration management, and RBus messaging for real-time communication with other RDK-B components. The component supports both IPv4 and IPv6 DNS configurations.
 
 At the device level, XDNS enhances the gateway's networking capabilities by offering DNS-based security services, custom DNS server configurations per client or network segment, and comprehensive logging and monitoring of DNS activities. This enables service providers to offer value-added services such as malware protection, content filtering, and network usage analytics while maintaining transparent operation for end users.
 
@@ -69,60 +69,21 @@ graph LR
 
 **Key Features & Responsibilities**: 
 
-- **DNS Configuration Management**: Centralized management of DNS server configurations for IPv4 and IPv6 networks, including primary and secondary DNS server settings with automatic failover capabilities
+- **DNS Configuration Management**: Centralized management of DNS server configurations for IPv4 and IPv6 networks, including primary and secondary DNS server settings
 - **WebConfig Integration**: Support for cloud-based DNS configuration updates through RDK-B's WebConfig framework, enabling remote management and dynamic policy updates
 - **Security Policy Enforcement**: Implementation of DNS-based security policies including malware protection, content filtering, and threat intelligence integration for network protection
 - **Multi-Profile Support**: Advanced DNS profile management supporting different DNS configurations per client, network segment, or time-based policies for flexible network administration
-- **WAN Failover Support**: Intelligent DNS server selection and failover mechanisms that work with RDK-B's WAN Manager for high availability network connectivity, including automatic DNS reconfiguration during WAN interface transitions and primary/secondary DNS server redundancy (see [DNS Failover Mechanisms](#dns-failover-mechanisms) for detailed explanation)
 - **TR-181 Data Model Integration**: Full TR-181 compliance for DNS parameters with support for remote management protocols and standardized device management interfaces
 - **Real-time Event Processing**: RBus-based event handling for network state changes, WAN interface transitions, and dynamic DNS configuration updates
 - **Logging and Telemetry**: Comprehensive DNS activity logging, performance metrics collection, and integration with RDK-B's telemetry framework for network monitoring
 
-### DNS Failover Mechanisms
-
-The XDNS component implements two distinct failover mechanisms to ensure continuous DNS service availability under network failures and interface transitions:
-
-**1. Multi-Server DNS Failover (Primary/Secondary DNS Resolution)**
-
-This mechanism provides resilience at the DNS resolution level by maintaining multiple DNS server configurations:
-
-- **Primary and Secondary DNS Servers**: XDNS reads `/etc/resolv.conf` during initialization and extracts both primary and secondary DNS server addresses for IPv4 and IPv6 protocols, storing them as `DefaultDeviceDnsIPv4`, `DefaultSecondaryDeviceDnsIPv4`, `DefaultDeviceDnsIPv6`, and `DefaultSecondaryDeviceDnsIPv6`
-- **Automatic Server Switching**: When dnsmasq (the DNS resolver service managed by XDNS) detects that the primary DNS server is unresponsive or timing out, it automatically switches DNS queries to the secondary DNS server without requiring manual intervention
-- **Per-Protocol Failover**: IPv4 and IPv6 DNS configurations maintain independent primary/secondary server pairs, ensuring protocol-specific resilience (e.g., IPv4 DNS can fail over to its secondary while IPv6 continues using its primary)
-- **Configuration Persistence**: Both primary and secondary DNS server configurations are stored in PSM and dnsmasq configuration files, ensuring failover capability survives device reboots
-
-**2. WAN Interface Failover (Network Connectivity Transitions)**
-
-This mechanism ensures DNS configuration adapts to WAN interface changes, particularly during primary-to-backup connectivity failover:
-
-- **WAN Manager Event Monitoring**: XDNS subscribes to RBus events from WAN Manager (`Device.X_RDK_WanManager.CurrentActiveInterface` and `Device.X_RDK_WanManager.CurrentActiveDNS`) and sysevent notifications (`current_wan_ifname`) to detect when the active WAN interface changes
-- **Interface-Specific DNS Handling**: 
-  - When the active WAN interface is the **primary interface** (e.g., `erouter0` for cable broadband): XDNS applies its custom DNS configurations including security filtering, parental controls, and DNS override rules
-  - When the system fails over to a **backup WAN interface** (e.g., cellular/LTE interface identified as mesh WAN): XDNS temporarily disables its custom configurations to allow the backup interface to use its native DNS servers, ensuring connectivity takes precedence over custom DNS policies
-- **Automatic Reconfiguration**: Upon detecting a WAN interface change, XDNS automatically calls `SetXdnsConfig()` or `UnsetXdnsConfig()` to enable/disable custom DNS policies, updates dnsmasq configuration files, and triggers a firewall restart to apply DNS routing rule changes
-- **Seamless Service Continuity**: The failover process ensures that DNS resolution continues without interruption—clients automatically receive appropriate DNS server addresses through DHCP renewals that reflect the new network configuration
-
-**Failover Flow Example:**
-
-1. Primary broadband connection (erouter0) fails → WAN Manager detects failure
-2. WAN Manager activates backup cellular interface → Publishes `CurrentActiveInterface` RBus event
-3. XDNS receives event → Identifies interface change to mesh/LTE WAN
-4. XDNS calls `UnsetXdnsConfig()` → Removes custom DNS override rules from dnsmasq
-5. Firewall restart applies new routing → Clients use cellular network's default DNS servers
-6. Primary connection restored → WAN Manager switches back to erouter0
-7. XDNS receives event → Calls `SetXdnsConfig()` to restore custom DNS policies
-8. Custom DNS filtering and security features resume operation
-
-These complementary failover mechanisms work together to ensure that DNS services remain available and functional regardless of individual DNS server failures or complete WAN interface transitions, providing high-availability DNS management for RDK-B gateway devices.
-
-
 ## Design
 
-The XDNS component is architected as a modular, event-driven middleware service that follows the RDK-B design principles of separation of concerns and loose coupling. The design emphasizes configurability, security, and reliability through a layered architecture that cleanly separates DNS policy management from DNS resolution services. The component operates as a configuration orchestrator, interfacing with the system's DNS resolver (typically dnsmasq) rather than implementing DNS resolution directly, which ensures compatibility with existing DNS infrastructure while adding advanced management capabilities.
+The XDNS component is architected as a modular, event-driven middleware service that follows the RDK-B design principles of separation of concerns and loose coupling. The design emphasizes configurability, security, and reliability through a layered architecture that cleanly separates DNS policy management from DNS resolution services. The component provides DML (Data Model Layer) support to configure DNS config file, which is consumed by the dnsmasq process for DNS resolution. XDNS does not implement DNS resolution directly; instead, it manages DNS configuration that dnsmasq uses, ensuring compatibility with existing DNS infrastructure while adding advanced management capabilities.
 
 The architectural design centers around three core principles: event-driven configuration management, where changes to network state or policies trigger automatic DNS configuration updates; modular function-based implementation, where DNS operations are implemented as discrete functions that can be called in sequence based on the operational context; and high-availability design, where DNS services remain operational even during component updates or network transitions. The component utilizes RDK-B's standard IPC mechanisms (RBus) for inter-component communication and maintains state consistency through integration with the Persistent Storage Manager (PSM). **Note**: XDNS does not implement a separate "policy engine" - DNS policies are applied directly through function calls from the main component logic.
 
-The northbound interface design focuses on standards compliance and cloud integration, exposing TR-181 compliant data models for traditional management protocols while supporting WebConfig APIs for modern cloud-based management. The southbound interface design emphasizes system integration, directly managing dnsmasq configuration files and system DNS settings while monitoring network interface changes through WAN Manager integration. This design ensures that DNS policies are enforced at the system level while maintaining visibility and control at the middleware level, enabling both local and remote management capabilities.
+The northbound interface design focuses on standards compliance and cloud integration, exposing TR-181 compliant data models for traditional management protocols while supporting WebConfig APIs for modern cloud-based management. The southbound interface design emphasizes system integration, directly managing DNS config file and dnsmasq configuration files while monitoring network interface changes through WAN Manager integration. This design ensures that DNS policies are enforced at the system level while maintaining visibility and control at the middleware level, enabling both local and remote management capabilities.
 
 ```mermaid
 flowchart TD
@@ -179,7 +140,7 @@ flowchart TD
 - **System-Level API Dependencies**: 
   - `syscfg` library for persistent system configuration storage and retrieval (used for storing XDNS enable/disable state and configuration parameters)
   - `sysevent` library for system event notification and monitoring (used for WAN interface change detection via `current_wan_ifname` events)
-  - Linux `inotify` API for file system monitoring (used to detect changes to `/etc/resolv.conf` and dnsmasq configuration files)
+  - Linux `inotify` API for file system monitoring (used to detect changes to DNS config file and dnsmasq configuration files)
   - Standard POSIX file I/O for configuration file management
   - **Note**: XDNS does NOT use HAL APIs - all platform integration is through system-level APIs and middleware components
 - **Systemd Services**: `CcspPsmSsp.service` (storage), `CcspCrSsp.service` (component registry), `CcspMtaAgentSsp.service` (management) must be active; `dnsmasq.service` must be available but controlled by XDNS component
@@ -195,8 +156,8 @@ The XDNS component implements a hybrid threading model combining single-threaded
 - **Threading Architecture**: Event-driven with selective multi-threading for I/O intensive operations
 - **Main Thread**: Handles RBus message processing, TR-181 data model operations, WebConfig API processing, DNS policy validation and application, state management and persistence operations
 - **Worker Threads**: 
-  - **File Monitor Thread**: Monitors `/etc/resolv.conf`, dnsmasq configuration files, and network interface changes using inotify for real-time detection of external configuration changes
-  - **Network Event Thread**: Processes WAN Manager events (`CurrentActiveInterface` and `CurrentActiveDNS` RBus events), interface state changes, and DNS failover operations including automatic XDNS policy enable/disable during WAN interface transitions to ensure continuous DNS service availability
+  - **File Monitor Thread**: Monitors DNS config file, dnsmasq configuration files, and network interface changes using inotify for real-time detection of external configuration changes
+  - **Network Event Thread**: Processes WAN Manager events (`CurrentActiveInterface` and `CurrentActiveDNS` RBus events) and interface state changes
 - **Synchronization**: Mutex-protected shared data structures for DNS configuration state, atomic operations for critical configuration updates, condition variables for worker thread coordination and graceful shutdown signaling
 
 ### Component State Flow
@@ -256,7 +217,7 @@ During normal operation, XDNS responds to various network and configuration even
 
 **State Change Triggers:**
 
-- **WAN Interface Changes**: WAN failover events (primary broadband to cellular/LTE backup), interface up/down transitions, and new default route assignments trigger DNS server re-evaluation and automatic configuration updates to enable/disable custom DNS policies based on the active interface type
+- **WAN Interface Changes**: Interface up/down transitions and new default route assignments trigger DNS server re-evaluation and automatic configuration updates
 - **WebConfig Updates**: Cloud-based policy updates, security rule changes, and DNS profile modifications trigger validation and deployment of new configurations
 - **Network Topology Changes**: DHCP lease events, client connection/disconnection, and VLAN configuration changes trigger client-specific DNS policy application
 - **Security Events**: Threat detection, malware alerts, and security policy violations trigger DNS filtering rule updates and emergency policy enforcement
@@ -264,9 +225,6 @@ During normal operation, XDNS responds to various network and configuration even
 **Context Switching Scenarios:**
 
 - **DNS Profile Switching**: Component switches between different DNS configurations based on client identity, network segment, or time-based policies without service interruption
-- **Failover Context Switching**: Automatic switching occurs at two levels:
-  - **DNS Server Level**: dnsmasq automatically switches from primary to secondary DNS servers when the primary server becomes unresponsive, with separate failover for IPv4 and IPv6 name resolution
-  - **WAN Interface Level**: XDNS detects WAN interface changes via RBus events and automatically enables/disables custom DNS policies based on whether the active interface is the primary (broadband) or backup (cellular/LTE) connection, ensuring DNS resolution continues during network failover
 - **Security Context Switching**: Dynamic switching between normal and restricted DNS policies based on threat detection or parental control schedules
 
 ### Call Flow
@@ -354,7 +312,7 @@ The XDNS component operates as a central DNS management hub within the RDK-B eco
 | Target Component/Layer | Interaction Purpose | Key APIs/Endpoints |
 |------------------------|-------------------|------------------|
 | **RDK-B Middleware Components** |
-| WAN Manager | Network state monitoring, interface change notifications, DNS failover coordination | `Device.X_RDK_WanManager.CurrentActiveInterface`, `Device.X_RDK_WanManager.CurrentActiveDNS` |
+| WAN Manager | Network state monitoring, interface change notifications | `Device.X_RDK_WanManager.CurrentActiveInterface`, `Device.X_RDK_WanManager.CurrentActiveDNS` |
 | PSM (Persistent Storage) | DNS configuration persistence, system state storage, backup and recovery operations | `PSM_Set_Record_Value2()`, `PSM_Get_Record_Value2()`, `/config/xdns/` namespace |
 | DHCP v4/v6 Servers | DNS server assignment to clients, DHCP option configuration, lease management integration | `/dmcli eRT setv Device.DHCPv4.Server.Pool.{i}.DNSServers`, DHCPv6 DNS options |
 | TR-181 Provider | Standards-compliant parameter management, remote device management, data model updates | `Device.X_RDKCENTRAL-COM_XDNS.*` parameters, TR-181 commit/validate operations |
@@ -368,7 +326,7 @@ The XDNS component operates as a central DNS management hub within the RDK-B eco
 | Event Name | Event Topic/Path | Trigger Condition | Subscriber Components |
 |------------|-----------------|-------------------|---------------------|
 | DNS_Configuration_Changed | `Device.X_RDKCENTRAL-COM_XDNS.ConfigurationChanged` | DNS server list updates, policy changes, security rule modifications | DHCP Servers, Telemetry Agent, Network Monitor |
-| DNS_Failover_Event | `Device.X_RDKCENTRAL-COM_XDNS.FailoverEvent` | Primary DNS server failure triggering automatic failover to secondary DNS, or WAN interface transitions from primary to backup connectivity | WAN Manager, Telemetry Agent, Management Systems |
+
 | Security_Policy_Applied | `Device.X_RDKCENTRAL-COM_XDNS.SecurityEvent` | Malware domain blocked, content filter activated, threat detected | Security Components, Logging System, Parental Controls |
 
 ### IPC Flow Patterns
@@ -391,25 +349,6 @@ sequenceDiagram
     XDNS-->>WebUI: Configuration Success
 ```
 
-**WAN Failover Event Notification Flow:**
-
-```mermaid
-sequenceDiagram
-    participant WanMgr as WAN Manager
-    participant XDNS as XDNS Component
-    participant DHCPv4 as DHCP v4 Server
-    participant DHCPv6 as DHCP v6 Server
-    participant Clients as Network Clients
-
-    WanMgr->>XDNS: WAN Interface Change Event (RBus)
-    Note over XDNS: Process interface change<br/>Determine new DNS servers
-    XDNS->>DHCPv4: Update IPv4 DNS Options
-    XDNS->>DHCPv6: Update IPv6 DNS Options
-    DHCPv4-->>XDNS: Configuration Updated
-    DHCPv6-->>XDNS: Configuration Updated
-    Note over Clients: Clients receive new DNS<br/>servers via DHCP renewal
-```
-
 ## Implementation Details
 
 ### System-Level API Integration
@@ -422,7 +361,7 @@ The XDNS component operates at the middleware level and does **not** utilize HAL
 |---------|---------|-------------------|
 | `syscfg_get/syscfg_set` | System configuration parameter management for DNS settings persistence (stores XDNS enable state and configuration in `/nvram/syscfg.db`) | `xdns_param.c`, `cosa_xdns_apis.c` |
 | `sysevent_get/sysevent_set/sysevent_open` | Network event monitoring and state change notifications (monitors `current_wan_ifname` for WAN interface changes) | `cosa_xdns_apis.c` |
-| `inotify_init/inotify_add_watch` | File system monitoring for configuration file changes and automatic updates (monitors `/etc/resolv.conf` for external DNS changes) | `cosa_xdns_apis.c` |
+| `inotify_init/inotify_add_watch` | File system monitoring for configuration file changes and automatic updates (monitors DNS config file for external DNS changes) | `cosa_xdns_apis.c` |
 | PSM APIs (`PSM_Get_Record_Value2`, `PSM_Set_Record_Value2`) | Persistent storage of DNS mappings and configuration through RDK-B middleware (not a system-level API but middleware component) | `cosa_xdns_dml.c`, `cosa_xdns_apis.h` |
 
 ### Key Implementation Logic
@@ -443,12 +382,10 @@ The XDNS component operates at the middleware level and does **not** utilize HAL
 - **Real-time Network Event Handling**: Network state changes are monitored through RBus event subscriptions and sysevent monitoring for immediate DNS configuration adaptation
      - WAN Manager event subscription and processing in `cosa_xdns_apis.c` (function: `eventReceiveHandler()`)
      - Network interface monitoring with automatic detection of WAN interface changes via `current_wan_ifname` sysevent
-     - DNS failover logic implementing WAN interface-based configuration switching: `SetXdnsConfig()` enables custom DNS policies on primary WAN interface while `UnsetXdnsConfig()` disables them on backup/mesh WAN interface
      - Automatic DNS configuration updates based on WAN interface state changes with firewall restart to apply routing rules
 
 - **Error Handling Strategy**: Comprehensive error handling with graceful degradation ensures DNS services remain functional even during configuration errors or network issues
      - Configuration validation with detailed error reporting and rollback mechanisms
-     - DNS server availability checking with automatic failover to backup servers managed by dnsmasq
      - Logging and telemetry integration for troubleshooting and monitoring
 
 - **Logging & Debugging**: Multi-level logging system with component-specific debug categories and integration with RDK-B's centralized logging framework
