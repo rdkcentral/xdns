@@ -37,6 +37,7 @@ FileIOMock *g_fileIOMock = NULL;
 SocketMock *g_socketMock = NULL;
 FileDescriptorMock *g_fdMock = NULL;
 LibnetMock *g_libnetMock = NULL;
+telemetryMock *g_telemetryMock = nullptr;
 
 FILE* debugLogFile = NULL;
 int consoleDebugEnable = 0;
