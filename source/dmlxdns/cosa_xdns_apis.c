@@ -80,7 +80,6 @@ extern ANSC_HANDLE bus_handle;
 #include "ccsp_xdnsLog_wrapper.h"
 #include "safec_lib_common.h"
 #include "secure_wrapper.h"
-#include <telemetry_busmessage_sender.h>
 //static pthread_mutex_t dnsmasqMutex = PTHREAD_MUTEX_INITIALIZER;
 
 #define BUF_LEN (10 * (sizeof(struct inotify_event) + NAME_MAX + 1))

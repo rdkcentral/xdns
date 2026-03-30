@@ -19,6 +19,7 @@
 
 #include "cosa_apis.h"
 #include "dslh_definitions_tr143.h"
+#include <telemetry_busmessage_sender.h>
 
 #define RESOLV_CONF "/etc/resolv.conf"
 #define DNSMASQ_SERVERS_CONF "/nvram/dnsmasq_servers.conf"
