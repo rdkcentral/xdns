@@ -718,6 +718,7 @@ XDNS_SetParamBoolValue
         if (!is_devicemode_business())
         {
             CcspTraceInfo(("[XDNS] DNSSec feature not supported in residential mode\n"));
+            t2_event_d("XDNS_DNSSec_NotSupported", 1);
             return FALSE;
         }
 #endif // _ONESTACK_PRODUCT_REQ_
