@@ -1268,6 +1268,13 @@ CosaDmlGetSelfHealCfg(
                 break;
             }
 
+            char *pEntryLog = (char *)malloc(512);
+            if (pEntryLog)
+            {
+                snprintf(pEntryLog, 512, "Processing XDNS entry: %s", buf);
+                CcspTraceInfo(("%s\n", pEntryLog));
+            }
+
             /*
             Sample:
             dnsoverride AA:BB:CC:DD:EE:FF 1.2.3.4 2001:xxx:xxx:xxx ArbitrarySting
@@ -1293,6 +1300,7 @@ CosaDmlGetSelfHealCfg(
             if(ret < 4)
             {
                 free(pDnsTableEntry);
+                CcspTraceWarning(("%s skipping invalid entry for mac: %s\n", __FUNCTION__, pDnsTableEntry->MacAddress));
                 continue;
             }
             else
