@@ -637,9 +637,6 @@ XDNS_GetParamBoolValue
     if((!ind) && (rc == EOK))
     {
 #if defined(_CBR_PRODUCT_REQ_) || defined(_ONESTACK_PRODUCT_REQ_)
-#if defined(_ONESTACK_PRODUCT_REQ_)
-        if (is_devicemode_business())
-#endif // _ONESTACK_PRODUCT_REQ_
         {
             char buf[5] = {0};
             if (syscfg_get(NULL, "XDNS_DNSSecEnable", buf, sizeof(buf)) == 0)
@@ -682,9 +679,6 @@ XDNS_SetParamBoolValue
     if((!ind) && (rc == EOK))
     {
 #if defined(_CBR_PRODUCT_REQ_) || defined(_ONESTACK_PRODUCT_REQ_)
-#if defined(_ONESTACK_PRODUCT_REQ_)
-        if (is_devicemode_business())
-#endif // _ONESTACK_PRODUCT_REQ_
         {
             char bval[2] = {0};
             if (bValue == TRUE)
@@ -714,14 +708,6 @@ XDNS_SetParamBoolValue
             }
             return TRUE;
         }
-#if defined(_ONESTACK_PRODUCT_REQ_)
-        if (!is_devicemode_business())
-        {
-            CcspTraceInfo(("[XDNS] DNSSec feature not supported in residential mode\n"));
-            t2_event_d("XDNS_DNSSec_NotSupported", 1);
-            return FALSE;
-        }
-#endif // _ONESTACK_PRODUCT_REQ_
 #endif // _CBR_PRODUCT_REQ_ || _ONESTACK_PRODUCT_REQ_
     }
 

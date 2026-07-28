@@ -690,16 +690,9 @@ int set_xdns_conf(xdnsdoc_t *xd, xdns_cache *tmp_xdns_cache)
             }
 	}
 #if !defined(_COSA_FOR_BCI_) || defined(_ONESTACK_PRODUCT_REQ_)
-#if defined(_ONESTACK_PRODUCT_REQ_)
-    else if (!is_devicemode_business() &&
-             ((!strncmp(xd->default_ipv4, USE_RDK_DEFAULT_STRING, sizeof(USE_RDK_DEFAULT_STRING)) && (INVALID_IP != CheckIfIpIsValid(xd->default_ipv6))) ||
-              ((INVALID_IP != CheckIfIpIsValid(xd->default_ipv4)) && (!strncmp(xd->default_ipv6, USE_RDK_DEFAULT_STRING, sizeof(USE_RDK_DEFAULT_STRING)))) ||
-              ((!strncmp(xd->default_ipv4, USE_RDK_DEFAULT_STRING, sizeof(USE_RDK_DEFAULT_STRING))) && (!strncmp(xd->default_ipv6, USE_RDK_DEFAULT_STRING, sizeof(USE_RDK_DEFAULT_STRING))))))
-#else  // _ONESTACK_PRODUCT_REQ_
     else if ((!strncmp(xd->default_ipv4, USE_RDK_DEFAULT_STRING, sizeof(USE_RDK_DEFAULT_STRING)) && (INVALID_IP != CheckIfIpIsValid(xd->default_ipv6))) ||
              ((INVALID_IP != CheckIfIpIsValid(xd->default_ipv4)) && (!strncmp(xd->default_ipv6, USE_RDK_DEFAULT_STRING, sizeof(USE_RDK_DEFAULT_STRING)))) ||
              ((!strncmp(xd->default_ipv4, USE_RDK_DEFAULT_STRING, sizeof(USE_RDK_DEFAULT_STRING))) && (!strncmp(xd->default_ipv6, USE_RDK_DEFAULT_STRING, sizeof(USE_RDK_DEFAULT_STRING)))))
-#endif // _ONESTACK_PRODUCT_REQ_
     {
         ret = xdns_read_load_dns_ip(xd->default_ipv4, xd->default_ipv6, tmp_xdns_cache->DefaultDeviceDnsIPv4, tmp_xdns_cache->DefaultDeviceDnsIPv6);
         if (0 != ret)
@@ -777,17 +770,10 @@ int set_xdns_conf(xdnsdoc_t *xd, xdns_cache *tmp_xdns_cache)
                 }
         	}
 #if defined(_COSA_FOR_BCI_) || defined(_ONESTACK_PRODUCT_REQ_)
-#if defined(_ONESTACK_PRODUCT_REQ_)
-        else if (is_devicemode_business() &&
-                 ((!strncmp(xd->table_param->entries[i].dns_ipv4, USE_RDK_DEFAULT_STRING, sizeof(USE_RDK_DEFAULT_STRING)) && (INVALID_IP != CheckIfIpIsValid(xd->table_param->entries[i].dns_ipv6))) ||
-                  ((INVALID_IP != CheckIfIpIsValid(xd->table_param->entries[i].dns_ipv4)) && (!strncmp(xd->table_param->entries[i].dns_ipv6, USE_RDK_DEFAULT_STRING, sizeof(USE_RDK_DEFAULT_STRING)))) ||
-                  ((!strncmp(xd->table_param->entries[i].dns_ipv4, USE_RDK_DEFAULT_STRING, sizeof(USE_RDK_DEFAULT_STRING))) && (!strncmp(xd->table_param->entries[i].dns_ipv6, USE_RDK_DEFAULT_STRING, sizeof(USE_RDK_DEFAULT_STRING))))))
-#else  // _ONESTACK_PRODUCT_REQ_
         else if (
             (!strncmp(xd->table_param->entries[i].dns_ipv4, USE_RDK_DEFAULT_STRING, sizeof(USE_RDK_DEFAULT_STRING)) && (INVALID_IP != CheckIfIpIsValid(xd->table_param->entries[i].dns_ipv6))) ||
             ((INVALID_IP != CheckIfIpIsValid(xd->table_param->entries[i].dns_ipv4)) && (!strncmp(xd->table_param->entries[i].dns_ipv6, USE_RDK_DEFAULT_STRING, sizeof(USE_RDK_DEFAULT_STRING)))) ||
             ((!strncmp(xd->table_param->entries[i].dns_ipv4, USE_RDK_DEFAULT_STRING, sizeof(USE_RDK_DEFAULT_STRING))) && (!strncmp(xd->table_param->entries[i].dns_ipv6, USE_RDK_DEFAULT_STRING, sizeof(USE_RDK_DEFAULT_STRING)))))
-#endif // _ONESTACK_PRODUCT_REQ_
         {
             ret = xdns_read_load_dns_ip(xd->table_param->entries[i].dns_ipv4, xd->table_param->entries[i].dns_ipv6, tmp_xdns_cache->XDNSTableList[i].DnsIPv4, tmp_xdns_cache->XDNSTableList[i].DnsIPv6);
             if (0 != ret)

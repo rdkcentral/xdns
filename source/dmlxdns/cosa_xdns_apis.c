@@ -533,14 +533,9 @@ void RefreshResolvConfEntry()
 		}
 
 #if defined(_COSA_FOR_BCI_) || defined(_ONESTACK_PRODUCT_REQ_)
-#if defined(_ONESTACK_PRODUCT_REQ_)
-            if (is_devicemode_business())
-#endif // _ONESTACK_PRODUCT_REQ_
+            if (strstr(resolvConfEntry, "XDNS_Multi_Profile"))
             {
-                if (strstr(resolvConfEntry, "XDNS_Multi_Profile"))
-                {
-                    continue;
-                }
+                continue;
             }
 #endif // _COSA_FOR_BCI_ || _ONESTACK_PRODUCT_REQ_
 
@@ -607,23 +602,20 @@ void RefreshResolvConfEntry()
     }
 
 #if defined(_COSA_FOR_BCI_) || defined(_ONESTACK_PRODUCT_REQ_)
-#if defined(_ONESTACK_PRODUCT_REQ_)
-        if (is_devicemode_business())
-#endif // _ONESTACK_PRODUCT_REQ_
+    {
+        char multiprofile_flag[5] = {0};
+        syscfg_get(NULL, "MultiProfileXDNS", multiprofile_flag, sizeof(multiprofile_flag));
+        if (multiprofile_flag[0] == '1' && multiprofile_flag[1] == '\0')
         {
-            char multiprofile_flag[5] = {0};
-            syscfg_get(NULL, "MultiProfileXDNS", multiprofile_flag, sizeof(multiprofile_flag));
-            if (multiprofile_flag[0] == '1' && multiprofile_flag[1] == '\0')
-            {
-                fprintf(fp2, "XDNS_Multi_Profile Enabled\n");
-                fprintf(stderr, "## CcspXDNS #### Multi Profile XDNS feature is Enabled\n");
-            }
-            else
-            {
-                fprintf(fp2, "XDNS_Multi_Profile Disabled\n");
-                fprintf(stderr, "## CcspXDNS #### Multi Profile XDNS feature is disabled\n");
-            }
+            fprintf(fp2, "XDNS_Multi_Profile Enabled\n");
+            fprintf(stderr, "## CcspXDNS #### Multi Profile XDNS feature is Enabled\n");
         }
+        else
+        {
+            fprintf(fp2, "XDNS_Multi_Profile Disabled\n");
+            fprintf(stderr, "## CcspXDNS #### Multi Profile XDNS feature is disabled\n");
+        }
+    }
 #endif // _COSA_FOR_BCI_ || _ONESTACK_PRODUCT_REQ_
 
     // at this point the temp file has entries from resolv.conf and dnsmasq_server.conf
@@ -1633,14 +1625,9 @@ int SetXdnsConfig()
                 }
 
 #if defined(_COSA_FOR_BCI_) || defined(_ONESTACK_PRODUCT_REQ_)
-#if defined(_ONESTACK_PRODUCT_REQ_)
-        if (is_devicemode_business())
-#endif // _ONESTACK_PRODUCT_REQ_
+        if (strstr(confEntry, "XDNS_Multi_Profile"))
         {
-            if (strstr(confEntry, "XDNS_Multi_Profile"))
-            {
-                continue;
-            }
+            continue;
         }
 #endif // _COSA_FOR_BCI_ || _ONESTACK_PRODUCT_REQ_
 
@@ -1738,9 +1725,6 @@ int SetXdnsConfig()
         }
 
 #if defined(_COSA_FOR_BCI_) || defined(_ONESTACK_PRODUCT_REQ_)
-#if defined(_ONESTACK_PRODUCT_REQ_)
-    if (is_devicemode_business())
-#endif // _ONESTACK_PRODUCT_REQ_
     {
         char multiprofile_flag[5] = {0};
         syscfg_get(NULL, "MultiProfileXDNS", multiprofile_flag, sizeof(multiprofile_flag));
@@ -1865,14 +1849,9 @@ int UnsetXdnsConfig()
                 }
 
 #if defined(_COSA_FOR_BCI_) || defined(_ONESTACK_PRODUCT_REQ_)
-#if defined(_ONESTACK_PRODUCT_REQ_)
-        if (is_devicemode_business())
-#endif // _ONESTACK_PRODUCT_REQ_
+        if (strstr(confEntry, "XDNS_Multi_Profile"))
         {
-            if (strstr(confEntry, "XDNS_Multi_Profile"))
-            {
-                continue;
-            }
+            continue;
         }
 #endif // _COSA_FOR_BCI_ || _ONESTACK_PRODUCT_REQ_
 
