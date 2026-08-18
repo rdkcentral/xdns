@@ -39,6 +39,8 @@
     *  XDNS_SetParamStringValue
     *  XDNS_GetParamBoolValue
     *  XDNS_SetParamBoolValue
+    *  XDNS_GetParamUlongValue
+    *  XDNS_SetParamUlongValue
     *  XDNS_Validate
     *  XDNS_Commit
     *  XDNS_Rollback
@@ -76,6 +78,22 @@ XDNS_SetParamBoolValue
         ANSC_HANDLE                 hInsContext,
         char*                       ParamName,
         BOOL                        bValue
+    );
+
+BOOL
+XDNS_GetParamUlongValue
+    (
+        ANSC_HANDLE                 hInsContext,
+        char*                       ParamName,
+        ULONG*                      puLong
+    );
+
+BOOL
+XDNS_SetParamUlongValue
+    (
+        ANSC_HANDLE                 hInsContext,
+        char*                       ParamName,
+        ULONG                       uValue
     );
 
 

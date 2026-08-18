@@ -87,6 +87,8 @@
             <func_SetParamStringValue>XDNS_SetParamStringValue</func_SetParamStringValue>
             <func_GetParamBoolValue>XDNS_GetParamBoolValue</func_GetParamBoolValue>
             <func_SetParamBoolValue>XDNS_SetParamBoolValue</func_SetParamBoolValue>
+            <func_GetParamUlongValue>XDNS_GetParamUlongValue</func_GetParamUlongValue>
+            <func_SetParamUlongValue>XDNS_SetParamUlongValue</func_SetParamUlongValue>
             <func_Validate>XDNS_Validate</func_Validate>
             <func_Commit>XDNS_Commit</func_Commit>
             <func_Rollback>XDNS_Rollback</func_Rollback>
@@ -126,6 +128,12 @@
                 <name>DNSSecEnable</name>
                 <type>boolean</type>
                 <syntax>bool</syntax>
+                <writable>true</writable>
+            </parameter>
+            <parameter>
+                <name>DNSForwardMax</name>
+                <type>unsignedInt</type>
+                <syntax>uint32</syntax>
                 <writable>true</writable>
             </parameter>
             <parameter>

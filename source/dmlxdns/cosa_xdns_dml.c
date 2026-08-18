@@ -1002,6 +1002,164 @@ XDNS_SetParamStringValue
    
 }
 
+/**********************************************************************
+
+    caller:     owner of this object
+
+    prototype:
+
+        BOOL
+        XDNS_GetParamUlongValue
+            (
+                ANSC_HANDLE                 hInsContext,
+                char*                       ParamName,
+                ULONG*                      puLong
+            );
+
+    description:
+
+        This function is called to retrieve ULONG parameter value;
+
+    argument:   ANSC_HANDLE                 hInsContext,
+                The instance handle;
+
+                char*                       ParamName,
+                The parameter name;
+
+                ULONG*                      puLong
+                The buffer of returned ULONG value;
+
+    return:     TRUE if succeeded.
+
+**********************************************************************/
+BOOL
+XDNS_GetParamUlongValue
+    (
+        ANSC_HANDLE                 hInsContext,
+        char*                       ParamName,
+        ULONG*                      puLong
+    )
+{
+    UNREFERENCED_PARAMETER(hInsContext);
+    errno_t rc = -1;
+    int ind = -1;
+
+    CcspXdnsConsoleTrace(("RDK_LOG_DEBUG, Xdns %s : ENTER \n", __FUNCTION__));
+
+    rc = strcmp_s("DNSForwardMax", strlen("DNSForwardMax"), ParamName, &ind);
+    ERR_CHK(rc);
+    if ((!ind) && (rc == EOK))
+    {
+        char buf[16] = {0};
+        if (syscfg_get(NULL, "dnsmasq_forward_max", buf, sizeof(buf)) == 0 && buf[0] != '\0')
+        {
+            *puLong = (ULONG)atoi(buf);
+        }
+        else
+        {
+            *puLong = 600; /* Default value */
+        }
+        CcspXdnsConsoleTrace(("RDK_LOG_DEBUG, Xdns %s : DNSForwardMax=%lu\n", __FUNCTION__, *puLong));
+        return TRUE;
+    }
+
+    return FALSE;
+}
+
+/**********************************************************************
+
+    caller:     owner of this object
+
+    prototype:
+
+        BOOL
+        XDNS_SetParamUlongValue
+            (
+                ANSC_HANDLE                 hInsContext,
+                char*                       ParamName,
+                ULONG                       uValue
+            );
+
+    description:
+
+        This function is called to set ULONG parameter value;
+
+    argument:   ANSC_HANDLE                 hInsContext,
+                The instance handle;
+
+                char*                       ParamName,
+                The parameter name;
+
+                ULONG                       uValue
+                The updated ULONG value;
+
+    return:     TRUE if succeeded.
+
+**********************************************************************/
+BOOL
+XDNS_SetParamUlongValue
+    (
+        ANSC_HANDLE                 hInsContext,
+        char*                       ParamName,
+        ULONG                       uValue
+    )
+{
+    UNREFERENCED_PARAMETER(hInsContext);
+    errno_t rc = -1;
+    int ind = -1;
+
+    CcspXdnsConsoleTrace(("RDK_LOG_DEBUG, Xdns %s : ENTER \n", __FUNCTION__));
+
+    rc = strcmp_s("DNSForwardMax", strlen("DNSForwardMax"), ParamName, &ind);
+    ERR_CHK(rc);
+    if ((!ind) && (rc == EOK))
+    {
+        /* Validate range */
+        if (uValue < 1 || uValue > 600)
+        {
+            CcspTraceError(("XDNS %s: Invalid value %lu (must be 1-600)\n", __FUNCTION__, uValue));
+            return FALSE;
+        }
+
+        /* Check if value is already set to avoid unnecessary restart */
+        char currentBuf[16] = {0};
+        if (syscfg_get(NULL, "dnsmasq_forward_max", currentBuf, sizeof(currentBuf)) == 0)
+        {
+            ULONG currentValue = (ULONG)atoi(currentBuf);
+            if (currentValue == uValue)
+            {
+                CcspXdnsConsoleTrace(("RDK_LOG_DEBUG, Xdns %s: Value unchanged (%lu), skipping restart\n", __FUNCTION__, uValue));
+                return TRUE;
+            }
+        }
+
+        /* Write to syscfg */
+        char buf[16] = {0};
+        snprintf(buf, sizeof(buf), "%lu", uValue);
+        if (syscfg_set(NULL, "dnsmasq_forward_max", buf) != 0)
+        {
+            CcspTraceError(("XDNS %s: syscfg_set failed\n", __FUNCTION__));
+            return FALSE;
+        }
+
+        if (syscfg_commit() != 0)
+        {
+            CcspTraceError(("XDNS %s: syscfg_commit failed\n", __FUNCTION__));
+            return FALSE;
+        }
+
+        CcspXdnsConsoleTrace(("RDK_LOG_DEBUG, Xdns %s: Set dns-forward-max=%lu\n", __FUNCTION__, uValue));
+
+        /* Restart dnsmasq */
+        commonSyseventSet("dhcp_server-stop", "");
+        commonSyseventSet("dhcp_server-start", "");
+
+        return TRUE;
+    }
+
+    return FALSE;
+}
+
 
 BOOL
 XDNS_Validate
