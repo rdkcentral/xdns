@@ -1561,6 +1561,10 @@ DNSMappingTable_DelEntry
 
     RemoveDnsmasqConfEntry(pDnsTableEntry->MacAddress);
 
+    /* XDNS firewall rules are per-client; refresh them so the removed
+     * client's DNS redirect rule is dropped immediately (RDKB-64441) */
+    commonSyseventSet("firewall-restart", "");
+
     if ( returnStatus == ANSC_STATUS_SUCCESS )
 	{
 			/* Remove entery from the Queue */
@@ -1939,6 +1943,10 @@ DNSMappingTable_Commit
     snprintf(dnsoverrideEntry[0], 256, "dnsoverride %s %s %s\n", pDnsTableEntry->MacAddress, pDnsTableEntry->DnsIPv4, pDnsTableEntry->Tag);
 #endif
     ReplaceDnsmasqConfEntry(pDnsTableEntry->MacAddress, dnsoverrideEntry,1);
+
+    /* XDNS firewall rules are per-client; refresh them so the new/updated
+     * client's DNS redirect rule is applied immediately (RDKB-64441) */
+    commonSyseventSet("firewall-restart", "");
 
     pDnsTableEntry->MacAddressChanged = FALSE;
     pDnsTableEntry->DnsIPv4Changed = FALSE;
