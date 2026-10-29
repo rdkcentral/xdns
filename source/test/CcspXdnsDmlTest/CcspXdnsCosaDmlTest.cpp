@@ -2575,6 +2575,10 @@ TEST_F(CcspXdnsCosaDmlTestFixture, DNSMappingTable_DelEntry)
 
     ANSC_STATUS returnStatus = ANSC_STATUS_SUCCESS;
 
+    EXPECT_CALL(*g_syseventMock, sysevent_set(_, _, StrEq("firewall-restart"), _, _))
+        .Times(1)
+        .WillOnce(Return(0));
+
     EXPECT_CALL(*g_anscWrapperApiMock, AnscSListPopEntryByLink(_, _))
         .Times(1);
 
@@ -2615,6 +2619,10 @@ TEST_F(CcspXdnsCosaDmlTestFixture, DNSMappingTable_DelEntry_Failure)
 
     ANSC_STATUS returnStatus = ANSC_STATUS_FAILURE;
 
+    EXPECT_CALL(*g_syseventMock, sysevent_set(_, _, StrEq("firewall-restart"), _, _))
+        .Times(1)
+        .WillOnce(Return(0));
+
     EXPECT_CALL(*g_anscWrapperApiMock, AnscSListPopEntryByLink(_, _))
         .Times(1);
 
@@ -2654,6 +2662,10 @@ TEST_F(CcspXdnsCosaDmlTestFixture, DNSMappingTable_DelEntry_Failure2)
     pXdnsCxtLink->hContext = (ANSC_HANDLE)pDnsTableEntry;
 
     ANSC_STATUS returnStatus = ANSC_STATUS_FAILURE;
+
+    EXPECT_CALL(*g_syseventMock, sysevent_set(_, _, StrEq("firewall-restart"), _, _))
+        .Times(1)
+        .WillOnce(Return(0));
 
     EXPECT_CALL(*g_anscWrapperApiMock, AnscSListPopEntryByLink(_, _))
         .Times(1);
@@ -3953,6 +3965,10 @@ TEST_F(CcspXdnsCosaDmlTestFixture, DNSMappingTable_Commit)
         .Times(1)
         .WillOnce(DoAll(testing::SetArrayArgument<2>(buf, buf + sizeof(buf)), Return(0)));
 
+    EXPECT_CALL(*g_syseventMock, sysevent_set(_, _, StrEq("firewall-restart"), _, _))
+        .Times(1)
+        .WillOnce(Return(0));
+
     ULONG result = DNSMappingTable_Commit((ANSC_HANDLE)pXdnsCxtLink);
 
     EXPECT_EQ(result, 0);
@@ -3997,6 +4013,10 @@ TEST_F(CcspXdnsCosaDmlTestFixture, DNSMappingTable_Commit_v_secure_system_true)
         .Times(1)
         .WillOnce(DoAll(testing::SetArrayArgument<2>(buf, buf + sizeof(buf)), Return(0)));
 
+    EXPECT_CALL(*g_syseventMock, sysevent_set(_, _, StrEq("firewall-restart"), _, _))
+        .Times(1)
+        .WillOnce(Return(0));
+
     ULONG result = DNSMappingTable_Commit((ANSC_HANDLE)pXdnsCxtLink);
 
     EXPECT_EQ(result, 0);
@@ -4040,6 +4060,10 @@ TEST_F(CcspXdnsCosaDmlTestFixture, DNSMappingTable_Commit_v_secure_system_true2)
     EXPECT_CALL(*g_syscfgMock, syscfg_get(_, StrEq("X_RDKCENTRAL-COM_XDNS"), _, _))
         .Times(1)
         .WillOnce(DoAll(testing::SetArrayArgument<2>(buf, buf + sizeof(buf)), Return(0)));
+
+    EXPECT_CALL(*g_syseventMock, sysevent_set(_, _, StrEq("firewall-restart"), _, _))
+        .Times(1)
+        .WillOnce(Return(0));
 
     ULONG result = DNSMappingTable_Commit((ANSC_HANDLE)pXdnsCxtLink);
 
@@ -4090,6 +4114,10 @@ TEST_F(CcspXdnsCosaDmlTestFixture, DNSMappingTable_Commit_CoreNet)
         .Times(1)
         .WillOnce(DoAll(testing::SetArrayArgument<2>(buf, buf + sizeof(buf)), Return(0)));
 
+    EXPECT_CALL(*g_syseventMock, sysevent_set(_, _, StrEq("firewall-restart"), _, _))
+        .Times(1)
+        .WillOnce(Return(0));
+
     ULONG result = DNSMappingTable_Commit((ANSC_HANDLE)pXdnsCxtLink);
 
     EXPECT_EQ(result, 0);
@@ -4137,6 +4165,10 @@ TEST_F(CcspXdnsCosaDmlTestFixture, DNSMappingTable_Commit_CoreNet_Failure)
     EXPECT_CALL(*g_syscfgMock, syscfg_get(_, StrEq("X_RDKCENTRAL-COM_XDNS"), _, _))
         .Times(1)
         .WillOnce(DoAll(testing::SetArrayArgument<2>(buf, buf + sizeof(buf)), Return(0)));
+
+    EXPECT_CALL(*g_syseventMock, sysevent_set(_, _, StrEq("firewall-restart"), _, _))
+        .Times(1)
+        .WillOnce(Return(0));
 
     ULONG result = DNSMappingTable_Commit((ANSC_HANDLE)pXdnsCxtLink);
 
