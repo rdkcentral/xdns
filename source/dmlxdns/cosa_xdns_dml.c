@@ -1275,6 +1275,10 @@ XDNS_Commit
         CreateDnsmasqServerConf(pMyObject);
     }
 
+    // Restart firewall to apply the updated default DNS redirect rule(s);
+    // otherwise the global-default commit path never refreshes iptables.
+    commonSyseventSet("firewall-restart", "");
+
     pMyObject->DefaultDeviceDnsIPv4Changed = FALSE;
     pMyObject->DefaultDeviceDnsIPv6Changed = FALSE;
     pMyObject->DefaultSecondaryDeviceDnsIPv4Changed = FALSE;

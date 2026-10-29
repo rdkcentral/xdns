@@ -602,6 +602,14 @@ int apply_XDNS_cache_ToDB(xdns_cache *tmp_xdns_cache)
 
 	fclose(fp1);
 
+	// Restart firewall to apply the updated default/table DNS redirect
+	// rule(s); the conf file above is rewritten unconditionally on every
+	// WebConfig apply, but the enable-flag branch below only restarts the
+	// firewall when the enable state itself changes. Without this, a
+	// WebConfig update to DefaultDeviceDns*/DNSMappingTable that leaves
+	// XdnsEnable unchanged would never refresh iptables.
+	commonSyseventSet("firewall-restart", "");
+
 	syscfg_get( NULL, "X_RDKCENTRAL-COM_XDNS", buf, sizeof(buf));
 	int var=atoi(buf);
     	if( tmp_xdns_cache->XdnsEnable == var)
