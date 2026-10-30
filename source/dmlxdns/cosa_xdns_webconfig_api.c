@@ -602,6 +602,10 @@ int apply_XDNS_cache_ToDB(xdns_cache *tmp_xdns_cache)
 
 	fclose(fp1);
 
+	// Restart firewall to pick up the rewritten conf file, since the
+	// enable-flag branch below only restarts on an XdnsEnable change.
+	commonSyseventSet("firewall-restart", "");
+
 	syscfg_get( NULL, "X_RDKCENTRAL-COM_XDNS", buf, sizeof(buf));
 	int var=atoi(buf);
     	if( tmp_xdns_cache->XdnsEnable == var)
