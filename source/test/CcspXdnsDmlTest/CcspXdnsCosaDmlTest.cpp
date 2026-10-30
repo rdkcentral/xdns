@@ -2568,6 +2568,8 @@ TEST_F(CcspXdnsCosaDmlTestFixture, DNSMappingTable_DelEntry)
     PCOSA_DML_XDNS_MACDNS_MAPPING_ENTRY pDnsTableEntry = (PCOSA_DML_XDNS_MACDNS_MAPPING_ENTRY)malloc(sizeof(COSA_DML_XDNS_MACDNS_MAPPING_ENTRY));
     ASSERT_NE(pDnsTableEntry, nullptr);
 
+    strcpy(pDnsTableEntry->MacAddress, "00:11:22:33:44:55");
+
     PCOSA_CONTEXT_XDNS_LINK_OBJECT pXdnsCxtLink = (PCOSA_CONTEXT_XDNS_LINK_OBJECT)malloc(sizeof(COSA_CONTEXT_XDNS_LINK_OBJECT));
     ASSERT_NE(pXdnsCxtLink, nullptr);
 
@@ -2575,9 +2577,12 @@ TEST_F(CcspXdnsCosaDmlTestFixture, DNSMappingTable_DelEntry)
 
     ANSC_STATUS returnStatus = ANSC_STATUS_SUCCESS;
 
+    // A plain (unmasked) MAC is removed via ipset del, not a firewall restart.
+    EXPECT_CALL(*g_securewrapperMock, v_secure_system(_, _))
+        .WillRepeatedly(Return(0));
+
     EXPECT_CALL(*g_syseventMock, sysevent_set(_, _, StrEq("firewall-restart"), _, _))
-        .Times(1)
-        .WillOnce(Return(0));
+        .Times(0);
 
     EXPECT_CALL(*g_anscWrapperApiMock, AnscSListPopEntryByLink(_, _))
         .Times(1);
@@ -2612,6 +2617,8 @@ TEST_F(CcspXdnsCosaDmlTestFixture, DNSMappingTable_DelEntry_Failure)
     PCOSA_DML_XDNS_MACDNS_MAPPING_ENTRY pDnsTableEntry = (PCOSA_DML_XDNS_MACDNS_MAPPING_ENTRY)malloc(sizeof(COSA_DML_XDNS_MACDNS_MAPPING_ENTRY));
     ASSERT_NE(pDnsTableEntry, nullptr);
 
+    strcpy(pDnsTableEntry->MacAddress, "00:11:22:33:44:55");
+
     PCOSA_CONTEXT_XDNS_LINK_OBJECT pXdnsCxtLink = (PCOSA_CONTEXT_XDNS_LINK_OBJECT)malloc(sizeof(COSA_CONTEXT_XDNS_LINK_OBJECT));
     ASSERT_NE(pXdnsCxtLink, nullptr);
 
@@ -2619,9 +2626,12 @@ TEST_F(CcspXdnsCosaDmlTestFixture, DNSMappingTable_DelEntry_Failure)
 
     ANSC_STATUS returnStatus = ANSC_STATUS_FAILURE;
 
+    // A plain (unmasked) MAC is removed via ipset del, not a firewall restart.
+    EXPECT_CALL(*g_securewrapperMock, v_secure_system(_, _))
+        .WillRepeatedly(Return(0));
+
     EXPECT_CALL(*g_syseventMock, sysevent_set(_, _, StrEq("firewall-restart"), _, _))
-        .Times(1)
-        .WillOnce(Return(0));
+        .Times(0);
 
     EXPECT_CALL(*g_anscWrapperApiMock, AnscSListPopEntryByLink(_, _))
         .Times(1);
@@ -2656,6 +2666,8 @@ TEST_F(CcspXdnsCosaDmlTestFixture, DNSMappingTable_DelEntry_Failure2)
     PCOSA_DML_XDNS_MACDNS_MAPPING_ENTRY pDnsTableEntry = (PCOSA_DML_XDNS_MACDNS_MAPPING_ENTRY)malloc(sizeof(COSA_DML_XDNS_MACDNS_MAPPING_ENTRY));
     ASSERT_NE(pDnsTableEntry, nullptr);
 
+    strcpy(pDnsTableEntry->MacAddress, "00:11:22:33:44:55");
+
     PCOSA_CONTEXT_XDNS_LINK_OBJECT pXdnsCxtLink = (PCOSA_CONTEXT_XDNS_LINK_OBJECT)malloc(sizeof(COSA_CONTEXT_XDNS_LINK_OBJECT));
     ASSERT_NE(pXdnsCxtLink, nullptr);
 
@@ -2663,9 +2675,12 @@ TEST_F(CcspXdnsCosaDmlTestFixture, DNSMappingTable_DelEntry_Failure2)
 
     ANSC_STATUS returnStatus = ANSC_STATUS_FAILURE;
 
+    // A plain (unmasked) MAC is removed via ipset del, not a firewall restart.
+    EXPECT_CALL(*g_securewrapperMock, v_secure_system(_, _))
+        .WillRepeatedly(Return(0));
+
     EXPECT_CALL(*g_syseventMock, sysevent_set(_, _, StrEq("firewall-restart"), _, _))
-        .Times(1)
-        .WillOnce(Return(0));
+        .Times(0);
 
     EXPECT_CALL(*g_anscWrapperApiMock, AnscSListPopEntryByLink(_, _))
         .Times(1);
@@ -3965,9 +3980,9 @@ TEST_F(CcspXdnsCosaDmlTestFixture, DNSMappingTable_Commit)
         .Times(1)
         .WillOnce(DoAll(testing::SetArrayArgument<2>(buf, buf + sizeof(buf)), Return(0)));
 
+    // A plain (unmasked) MAC add/change updates ipset directly, not a restart.
     EXPECT_CALL(*g_syseventMock, sysevent_set(_, _, StrEq("firewall-restart"), _, _))
-        .Times(1)
-        .WillOnce(Return(0));
+        .Times(0);
 
     ULONG result = DNSMappingTable_Commit((ANSC_HANDLE)pXdnsCxtLink);
 
@@ -4013,9 +4028,9 @@ TEST_F(CcspXdnsCosaDmlTestFixture, DNSMappingTable_Commit_v_secure_system_true)
         .Times(1)
         .WillOnce(DoAll(testing::SetArrayArgument<2>(buf, buf + sizeof(buf)), Return(0)));
 
+    // A plain (unmasked) MAC add/change updates ipset directly, not a restart.
     EXPECT_CALL(*g_syseventMock, sysevent_set(_, _, StrEq("firewall-restart"), _, _))
-        .Times(1)
-        .WillOnce(Return(0));
+        .Times(0);
 
     ULONG result = DNSMappingTable_Commit((ANSC_HANDLE)pXdnsCxtLink);
 
@@ -4061,9 +4076,9 @@ TEST_F(CcspXdnsCosaDmlTestFixture, DNSMappingTable_Commit_v_secure_system_true2)
         .Times(1)
         .WillOnce(DoAll(testing::SetArrayArgument<2>(buf, buf + sizeof(buf)), Return(0)));
 
+    // A plain (unmasked) MAC add/change updates ipset directly, not a restart.
     EXPECT_CALL(*g_syseventMock, sysevent_set(_, _, StrEq("firewall-restart"), _, _))
-        .Times(1)
-        .WillOnce(Return(0));
+        .Times(0);
 
     ULONG result = DNSMappingTable_Commit((ANSC_HANDLE)pXdnsCxtLink);
 
@@ -4114,9 +4129,9 @@ TEST_F(CcspXdnsCosaDmlTestFixture, DNSMappingTable_Commit_CoreNet)
         .Times(1)
         .WillOnce(DoAll(testing::SetArrayArgument<2>(buf, buf + sizeof(buf)), Return(0)));
 
+    // A plain (unmasked) MAC add/change updates ipset directly, not a restart.
     EXPECT_CALL(*g_syseventMock, sysevent_set(_, _, StrEq("firewall-restart"), _, _))
-        .Times(1)
-        .WillOnce(Return(0));
+        .Times(0);
 
     ULONG result = DNSMappingTable_Commit((ANSC_HANDLE)pXdnsCxtLink);
 
@@ -4166,9 +4181,9 @@ TEST_F(CcspXdnsCosaDmlTestFixture, DNSMappingTable_Commit_CoreNet_Failure)
         .Times(1)
         .WillOnce(DoAll(testing::SetArrayArgument<2>(buf, buf + sizeof(buf)), Return(0)));
 
+    // A plain (unmasked) MAC add/change updates ipset directly, not a restart.
     EXPECT_CALL(*g_syseventMock, sysevent_set(_, _, StrEq("firewall-restart"), _, _))
-        .Times(1)
-        .WillOnce(Return(0));
+        .Times(0);
 
     ULONG result = DNSMappingTable_Commit((ANSC_HANDLE)pXdnsCxtLink);
 

@@ -115,6 +115,28 @@ BOOL isValidMacAddress
     return TRUE;
 }
 
+/* Keep in sync with XDNS_IPSET_V4/XDNS_IPSET_V6 in utopia's firewall.c */
+#define XDNS_IPSET_V4 "xdns_clients_v4"
+#define XDNS_IPSET_V6 "xdns_clients_v6"
+
+/*
+ * Updates the firewall's per-client ipsets directly instead of a full
+ * restart for a single MAC add/remove. Masked MAC entries (e.g.
+ * "xx:xx:xx:xx:xx:xx/ff:ff:ff:ff:ff:00") can't go in a hash:mac ipset, so
+ * fall back to a restart - needed anyway for the global-redirect fallback.
+ */
+static void xdns_sync_firewall_client(const char *mac, BOOL add)
+{
+    if (mac == NULL || strchr(mac, '/') != NULL)
+    {
+        commonSyseventSet("firewall-restart", "");
+        return;
+    }
+
+    v_secure_system("ipset -! %s %s %s", add ? "add" : "del", XDNS_IPSET_V4, mac);
+    v_secure_system("ipset -! %s %s %s", add ? "add" : "del", XDNS_IPSET_V6, mac);
+}
+
 /***********************************************************************
 
 
@@ -1565,9 +1587,8 @@ DNSMappingTable_DelEntry
 
     RemoveDnsmasqConfEntry(pDnsTableEntry->MacAddress);
 
-    /* XDNS firewall rules are per-client; refresh them so the removed
-     * client's DNS redirect rule is dropped immediately (RDKB-64441) */
-    commonSyseventSet("firewall-restart", "");
+    /* Drop this client from the firewall's redirect set */
+    xdns_sync_firewall_client(pDnsTableEntry->MacAddress, FALSE);
 
     if ( returnStatus == ANSC_STATUS_SUCCESS )
 	{
@@ -1948,9 +1969,13 @@ DNSMappingTable_Commit
 #endif
     ReplaceDnsmasqConfEntry(pDnsTableEntry->MacAddress, dnsoverrideEntry,1);
 
-    /* XDNS firewall rules are per-client; refresh them so the new/updated
-     * client's DNS redirect rule is applied immediately (RDKB-64441) */
-    commonSyseventSet("firewall-restart", "");
+    /* DnsIPv4/DnsIPv6/Tag-only edits don't change which clients get
+     * redirected - dnsmasq picks up the new override value on its own, so
+     * only a MAC add/change needs the firewall's client set updated */
+    if (pDnsTableEntry->MacAddressChanged)
+    {
+        xdns_sync_firewall_client(pDnsTableEntry->MacAddress, TRUE);
+    }
 
     pDnsTableEntry->MacAddressChanged = FALSE;
     pDnsTableEntry->DnsIPv4Changed = FALSE;
