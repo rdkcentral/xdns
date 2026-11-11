@@ -162,17 +162,19 @@ void ResetDnsmasqConfFile();
 void AppendDnsmasqConfEntry(char (*string1)[MAX_BUF_SIZE], int count);
 void RemoveDnsmasqConfEntry(char* macaddress);
 
-/* Generic client entry used to rebuild the ipset directly from in-memory
- * data, avoiding a re-read of DNSMASQ_SERVERS_CONF after it is written. */
+int xdns_sync_ipset_dm(ANSC_HANDLE hXdns);
+int xdns_ipset_stage_begin(char *stage, size_t stage_len);
+int xdns_ipset_add_mac(const char *stage, const char *mac, int *global_redirect);
+
+/* The default/unmatched client's DNS settings, used to decide global redirect. */
 typedef struct
 {
-    const char *mac;
+    const char *v4;
+    const char *v6;
     const char *tag;
-} xdns_ipset_entry_t;
+} xdns_default_dns_t;
 
-int xdns_sync_ipset(const char *defV4, const char *defV6, const char *defTag,
-                     const xdns_ipset_entry_t *entries, int count);
-int xdns_sync_ipset_dm(ANSC_HANDLE hXdns);
+int xdns_ipset_stage_commit(const char *stage, const xdns_default_dns_t *def, int rc, int global_redirect);
 void RefreshResolvConfEntry();
 int SetXdnsConfig();
 int UnsetXdnsConfig();

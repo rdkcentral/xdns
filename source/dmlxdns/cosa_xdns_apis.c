@@ -136,46 +136,41 @@ static int xdns_default_is_override(const char *dns)
     return 1;
 }
 
-/* Rebuilds the client ipset via a staging set and an atomic swap, and
- * writes XDNS_GlobalRedirect in the same pass - no re-read of
- * DNSMASQ_SERVERS_CONF needed. Global redirect applies when the default
- * entry is an override, has a non-default tag, or a masked MAC is present
- * (masked MACs are excluded from the ipset). Returns 0 on success. */
-int xdns_sync_ipset(const char *defV4, const char *defV6, const char *defTag,
-                     const xdns_ipset_entry_t *entries, int count)
+/* Creates the staging ipset and returns its name in 'stage'. Returns 0 on success. */
+int xdns_ipset_stage_begin(char *stage, size_t stage_len)
 {
-    char stage[64];
-    int rc;
-    int i;
-    int global_redirect = 0;
+    snprintf(stage, stage_len, "%s_new", XDNS_IPSET);
+    v_secure_system("ipset -! destroy %s", stage);
+    return v_secure_system("ipset -! create %s hash:mac", stage);
+}
 
-    if ((defTag != NULL && 0 != strcmp(defTag, XDNS_DEFAULT_TAG)) ||
-        xdns_default_is_override(defV4) || xdns_default_is_override(defV6))
+/* Adds one MAC to 'stage'. Masked MACs can't go in an ipset, so they set
+ * *global_redirect instead. Returns 0 on success (including no-op for empty/masked). */
+int xdns_ipset_add_mac(const char *stage, const char *mac, int *global_redirect)
+{
+    if (mac == NULL || mac[0] == '\0')
     {
-        global_redirect = 1;
+        return 0;
     }
 
-    snprintf(stage, sizeof(stage), "%s_new", XDNS_IPSET);
-    v_secure_system("ipset -! destroy %s", stage);
-    rc = v_secure_system("ipset -! create %s hash:mac", stage);
-
-    for (i = 0; rc == 0 && i < count; i++)
+    if (strchr(mac, '/') != NULL)
     {
-        const char *mac = entries[i].mac;
+        *global_redirect = 1;  /* Masked MAC: an ipset can't match it */
+        return 0;
+    }
 
-        if (mac == NULL || mac[0] == '\0')
-        {
-            continue;
-        }
+    return v_secure_system("ipset -! add %s %s", stage, mac);
+}
 
-        if (strchr(mac, '/') != NULL)
-        {
-            global_redirect = 1;  /* Masked MAC: an ipset can't match it */
-        }
-        else
-        {
-            rc = v_secure_system("ipset -! add %s %s", stage, mac);
-        }
+/* Moves 'stage' into XDNS_IPSET via an atomic swap and writes XDNS_GlobalRedirect.
+ * Global redirect applies when 'rc'/'global_redirect' already indicate it, the
+ * default entry is an override, or it has a non-default tag. Returns 0 on success. */
+int xdns_ipset_stage_commit(const char *stage, const xdns_default_dns_t *def, int rc, int global_redirect)
+{
+    if ((def->tag != NULL && 0 != strcmp(def->tag, XDNS_DEFAULT_TAG)) ||
+        xdns_default_is_override(def->v4) || xdns_default_is_override(def->v6))
+    {
+        global_redirect = 1;
     }
 
     if (rc == 0)
@@ -188,9 +183,9 @@ int xdns_sync_ipset(const char *defV4, const char *defV6, const char *defTag,
     }
     v_secure_system("ipset -! destroy %s", stage);
 
-    if (syscfg_set(NULL, "XDNS_GlobalRedirect", (rc != 0 || global_redirect) ? "1" : "0") != 0)
+    if (syscfg_set_commit(NULL, "XDNS_GlobalRedirect", (rc != 0 || global_redirect) ? "1" : "0") != 0)
     {
-        CcspTraceError(("%s: syscfg_set XDNS_GlobalRedirect failed\n", __FUNCTION__));
+        CcspTraceError(("%s: syscfg_set_commit XDNS_GlobalRedirect failed\n", __FUNCTION__));
         rc = -1;
     }
 
@@ -201,31 +196,33 @@ int xdns_sync_ipset(const char *defV4, const char *defV6, const char *defTag,
     return rc;
 }
 
-/* Builds the ipset entry list from the in-memory DM list and syncs it.
+/* Builds the ipset directly from the in-memory DM list via the staging primitives.
  * Takes the handle explicitly (not g_pCosaBEManager->hXdns) since it also
  * runs during CosaXDNSInitialize(), before that global is assigned. */
 int xdns_sync_ipset_dm(ANSC_HANDLE hXdns)
 {
     PCOSA_DATAMODEL_XDNS pMyObject = (PCOSA_DATAMODEL_XDNS)hXdns;
     PSINGLE_LINK_ENTRY pSListEntry;
-    xdns_ipset_entry_t entries[XDNS_CACHE_SIZE_MAX];
+    char stage[64];
+    int global_redirect = 0;
     int count = 0;
+    int rc = xdns_ipset_stage_begin(stage, sizeof(stage));
 
     pSListEntry = AnscSListGetFirstEntry(&pMyObject->XDNSDeviceList);
-    while (pSListEntry != NULL && count < XDNS_CACHE_SIZE_MAX)
+    while (rc == 0 && pSListEntry != NULL && count < XDNS_CACHE_SIZE_MAX)
     {
         PCOSA_CONTEXT_XDNS_LINK_OBJECT pCxtLink = ACCESS_COSA_CONTEXT_XDNS_LINK_OBJECT(pSListEntry);
         PCOSA_DML_XDNS_MACDNS_MAPPING_ENTRY pEntry = (PCOSA_DML_XDNS_MACDNS_MAPPING_ENTRY)pCxtLink->hContext;
 
-        entries[count].mac = pEntry->MacAddress;
-        entries[count].tag = pEntry->Tag;
+        rc = xdns_ipset_add_mac(stage, pEntry->MacAddress, &global_redirect);
         count++;
 
         pSListEntry = AnscSListGetNextEntry(pSListEntry);
     }
 
-    return xdns_sync_ipset(pMyObject->DefaultDeviceDnsIPv4, pMyObject->DefaultDeviceDnsIPv6,
-                            pMyObject->DefaultDeviceTag, entries, count);
+    xdns_default_dns_t def = { pMyObject->DefaultDeviceDnsIPv4, pMyObject->DefaultDeviceDnsIPv6,
+                                pMyObject->DefaultDeviceTag };
+    return xdns_ipset_stage_commit(stage, &def, rc, global_redirect);
 }
 
 #ifndef UNIT_TEST_DOCKER_SUPPORT

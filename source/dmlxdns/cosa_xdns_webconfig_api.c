@@ -592,6 +592,9 @@ int apply_XDNS_cache_ToDB(xdns_cache *tmp_xdns_cache)
 	}
 	fprintf(fp1, "%s", Entry);
 
+	char stage[64];
+	int global_redirect = 0;
+	int sync_rc = xdns_ipset_stage_begin(stage, sizeof(stage));
         for(i=0;i<(tmp_xdns_cache->Tablecount);i++)
         {
 		memset(Entry,0, sizeof(Entry));
@@ -600,18 +603,17 @@ int apply_XDNS_cache_ToDB(xdns_cache *tmp_xdns_cache)
 		if(rc < EOK) {
 		     ERR_CHK(rc);
 		}
+		if (sync_rc == 0)
+		{
+			sync_rc = xdns_ipset_add_mac(stage, tmp_xdns_cache->XDNSTableList[i].MacAddress, &global_redirect);
+		}
 	fprintf(fp1, "%s", Entry);
         }
 
 	fclose(fp1);
-	xdns_ipset_entry_t entries[XDNS_CACHE_SIZE] = {0};
-	for (int n = 0; n < tmp_xdns_cache->Tablecount; n++)
-	{
-		entries[n].mac = tmp_xdns_cache->XDNSTableList[n].MacAddress;
-		entries[n].tag = tmp_xdns_cache->XDNSTableList[n].Tag;
-	}
-	xdns_sync_ipset(tmp_xdns_cache->DefaultDeviceDnsIPv4, tmp_xdns_cache->DefaultDeviceDnsIPv6,
-	                 tmp_xdns_cache->DefaultDeviceTag, entries, tmp_xdns_cache->Tablecount);
+	xdns_default_dns_t def = { tmp_xdns_cache->DefaultDeviceDnsIPv4, tmp_xdns_cache->DefaultDeviceDnsIPv6,
+	                            tmp_xdns_cache->DefaultDeviceTag };
+	xdns_ipset_stage_commit(stage, &def, sync_rc, global_redirect);
 	syscfg_get(NULL, "XDNS_GlobalRedirect", newFlag, sizeof(newFlag));
 
 	syscfg_get( NULL, "X_RDKCENTRAL-COM_XDNS", buf, sizeof(buf));

@@ -2081,6 +2081,8 @@ TEST_F(CcspXdnsCosaDmlTestFixture, XDNS_Commit_Failure)
     ASSERT_NE(g_pCosaBEManager->hXdns, nullptr);
 
     PCOSA_DATAMODEL_XDNS pMyObject = (PCOSA_DATAMODEL_XDNS)g_pCosaBEManager->hXdns;
+    memset(pMyObject, 0, sizeof(COSA_DATAMODEL_XDNS));
+    AnscSListInitializeHeader(&pMyObject->XDNSDeviceList);
 
     pMyObject->DefaultDeviceDnsIPv4Changed = TRUE;
     strcpy(pMyObject->DefaultDeviceDnsIPv4, "192.168.1.2");
@@ -2130,6 +2132,8 @@ TEST_F(CcspXdnsCosaDmlTestFixture, XDNS_Commit_sprintf_s_fails)
     ASSERT_NE(g_pCosaBEManager->hXdns, nullptr);
 
     PCOSA_DATAMODEL_XDNS pMyObject = (PCOSA_DATAMODEL_XDNS)g_pCosaBEManager->hXdns;
+    memset(pMyObject, 0, sizeof(COSA_DATAMODEL_XDNS));
+    AnscSListInitializeHeader(&pMyObject->XDNSDeviceList);
 
     pMyObject->DefaultDeviceDnsIPv4Changed = TRUE;
     strcpy(pMyObject->DefaultDeviceDnsIPv4, "192.168.1.2");
@@ -2180,6 +2184,8 @@ TEST_F(CcspXdnsCosaDmlTestFixture, XDNS_Commit_CoreNet)
     ASSERT_NE(g_pCosaBEManager->hXdns, nullptr);
 
     PCOSA_DATAMODEL_XDNS pMyObject = (PCOSA_DATAMODEL_XDNS)g_pCosaBEManager->hXdns;
+    memset(pMyObject, 0, sizeof(COSA_DATAMODEL_XDNS));
+    AnscSListInitializeHeader(&pMyObject->XDNSDeviceList);
 
     pMyObject->DefaultDeviceDnsIPv4Changed = TRUE;
     strcpy(pMyObject->DefaultDeviceDnsIPv4, "192.168.1.2");
@@ -2233,6 +2239,8 @@ TEST_F(CcspXdnsCosaDmlTestFixture, XDNS_Commit_CoreNet_Failure)
     ASSERT_NE(g_pCosaBEManager->hXdns, nullptr);
 
     PCOSA_DATAMODEL_XDNS pMyObject = (PCOSA_DATAMODEL_XDNS)g_pCosaBEManager->hXdns;
+    memset(pMyObject, 0, sizeof(COSA_DATAMODEL_XDNS));
+    AnscSListInitializeHeader(&pMyObject->XDNSDeviceList);
 
     pMyObject->DefaultDeviceDnsIPv4Changed = TRUE;
     strcpy(pMyObject->DefaultDeviceDnsIPv4, "192.168.1.2");
@@ -3948,6 +3956,16 @@ TEST_F(CcspXdnsCosaDmlTestFixture, DNSMappingTable_Rollback_condition)
 
 TEST_F(CcspXdnsCosaDmlTestFixture, DNSMappingTable_Commit)
 {
+    g_pCosaBEManager = (PCOSA_BACKEND_MANAGER_OBJECT)malloc(sizeof(COSA_BACKEND_MANAGER_OBJECT));
+    ASSERT_NE(g_pCosaBEManager, nullptr);
+
+    g_pCosaBEManager->hXdns = (PCOSA_DATAMODEL_XDNS)malloc(sizeof(COSA_DATAMODEL_XDNS));
+    ASSERT_NE(g_pCosaBEManager->hXdns, nullptr);
+
+    PCOSA_DATAMODEL_XDNS pXdns = (PCOSA_DATAMODEL_XDNS)g_pCosaBEManager->hXdns;
+    memset(pXdns, 0, sizeof(COSA_DATAMODEL_XDNS));
+    AnscSListInitializeHeader(&pXdns->XDNSDeviceList);
+
     PCOSA_CONTEXT_XDNS_LINK_OBJECT pXdnsCxtLink = (PCOSA_CONTEXT_XDNS_LINK_OBJECT)malloc(sizeof(COSA_CONTEXT_XDNS_LINK_OBJECT));
     ASSERT_NE(pXdnsCxtLink, nullptr);
 
@@ -3990,6 +4008,13 @@ TEST_F(CcspXdnsCosaDmlTestFixture, DNSMappingTable_Commit)
 
     free(pDnsTableEntry);
     pDnsTableEntry = NULL;
+    free(pXdnsCxtLink);
+    pXdnsCxtLink = NULL;
+    free(g_pCosaBEManager->hXdns);
+    g_pCosaBEManager->hXdns = NULL;
+    free(g_pCosaBEManager);
+    g_pCosaBEManager = NULL;
+}
     free(pXdnsCxtLink);
     pXdnsCxtLink = NULL;
 }
