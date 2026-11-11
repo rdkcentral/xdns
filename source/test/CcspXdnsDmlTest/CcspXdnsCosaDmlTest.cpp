@@ -4010,13 +4010,12 @@ TEST_F(CcspXdnsCosaDmlTestFixture, DNSMappingTable_Commit)
     pDnsTableEntry = NULL;
     free(pXdnsCxtLink);
     pXdnsCxtLink = NULL;
-    free(g_pCosaBEManager->hXdns);
-    g_pCosaBEManager->hXdns = NULL;
-    free(g_pCosaBEManager);
-    g_pCosaBEManager = NULL;
-}
-    free(pXdnsCxtLink);
-    pXdnsCxtLink = NULL;
+free(pXdnsCxtLink);
+pXdnsCxtLink = NULL;
+free(g_pCosaBEManager->hXdns);
+g_pCosaBEManager->hXdns = NULL;
+free(g_pCosaBEManager);
+g_pCosaBEManager = NULL;
 }
 
 TEST_F(CcspXdnsCosaDmlTestFixture, DNSMappingTable_Commit_v_secure_system_true)
