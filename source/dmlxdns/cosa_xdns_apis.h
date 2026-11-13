@@ -164,7 +164,7 @@ void RemoveDnsmasqConfEntry(char* macaddress);
 
 int xdns_sync_ipset_dm(ANSC_HANDLE hXdns);
 int xdns_ipset_stage_begin(char *stage, size_t stage_len);
-int xdns_ipset_add_mac(const char *stage, const char *mac, int *global_redirect);
+int xdns_ipset_add_mac(const char *stage, const char *mac);
 
 /* The default/unmatched client's DNS settings, used to decide global redirect. */
 typedef struct
@@ -174,7 +174,7 @@ typedef struct
     const char *tag;
 } xdns_default_dns_t;
 
-int xdns_ipset_stage_commit(const char *stage, const xdns_default_dns_t *def, int rc, int global_redirect);
+int xdns_ipset_stage_commit(const char *stage, const xdns_default_dns_t *def, int rc);
 void RefreshResolvConfEntry();
 int SetXdnsConfig();
 int UnsetXdnsConfig();

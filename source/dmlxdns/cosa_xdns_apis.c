@@ -144,18 +144,11 @@ int xdns_ipset_stage_begin(char *stage, size_t stage_len)
     return v_secure_system("ipset -! create %s hash:mac", stage);
 }
 
-/* Adds one MAC to 'stage'. Masked MACs can't go in an ipset, so they set
- * *global_redirect instead. Returns 0 on success (including no-op for empty/masked). */
-int xdns_ipset_add_mac(const char *stage, const char *mac, int *global_redirect)
+/* Adds one MAC to 'stage'. Returns 0 on success (including no-op for empty). */
+int xdns_ipset_add_mac(const char *stage, const char *mac)
 {
     if (mac == NULL || mac[0] == '\0')
     {
-        return 0;
-    }
-
-    if (strchr(mac, '/') != NULL)
-    {
-        *global_redirect = 1;  /* Masked MAC: an ipset can't match it */
         return 0;
     }
 
@@ -163,10 +156,12 @@ int xdns_ipset_add_mac(const char *stage, const char *mac, int *global_redirect)
 }
 
 /* Moves 'stage' into XDNS_IPSET via an atomic swap and writes XDNS_GlobalRedirect.
- * Global redirect applies when 'rc'/'global_redirect' already indicate it, the
- * default entry is an override, or it has a non-default tag. Returns 0 on success. */
-int xdns_ipset_stage_commit(const char *stage, const xdns_default_dns_t *def, int rc, int global_redirect)
+ * Global redirect applies when 'rc' indicates a failure, the default entry is
+ * an override, or it has a non-default tag. Returns 0 on success. */
+int xdns_ipset_stage_commit(const char *stage, const xdns_default_dns_t *def, int rc)
 {
+    int global_redirect = 0;
+
     if ((def->tag != NULL && 0 != strcmp(def->tag, XDNS_DEFAULT_TAG)) ||
         xdns_default_is_override(def->v4) || xdns_default_is_override(def->v6))
     {
@@ -204,7 +199,6 @@ int xdns_sync_ipset_dm(ANSC_HANDLE hXdns)
     PCOSA_DATAMODEL_XDNS pMyObject = (PCOSA_DATAMODEL_XDNS)hXdns;
     PSINGLE_LINK_ENTRY pSListEntry;
     char stage[64];
-    int global_redirect = 0;
     int count = 0;
     int rc = xdns_ipset_stage_begin(stage, sizeof(stage));
 
@@ -214,7 +208,7 @@ int xdns_sync_ipset_dm(ANSC_HANDLE hXdns)
         PCOSA_CONTEXT_XDNS_LINK_OBJECT pCxtLink = ACCESS_COSA_CONTEXT_XDNS_LINK_OBJECT(pSListEntry);
         PCOSA_DML_XDNS_MACDNS_MAPPING_ENTRY pEntry = (PCOSA_DML_XDNS_MACDNS_MAPPING_ENTRY)pCxtLink->hContext;
 
-        rc = xdns_ipset_add_mac(stage, pEntry->MacAddress, &global_redirect);
+        rc = xdns_ipset_add_mac(stage, pEntry->MacAddress);
         count++;
 
         pSListEntry = AnscSListGetNextEntry(pSListEntry);
@@ -222,7 +216,7 @@ int xdns_sync_ipset_dm(ANSC_HANDLE hXdns)
 
     xdns_default_dns_t def = { pMyObject->DefaultDeviceDnsIPv4, pMyObject->DefaultDeviceDnsIPv6,
                                 pMyObject->DefaultDeviceTag };
-    return xdns_ipset_stage_commit(stage, &def, rc, global_redirect);
+    return xdns_ipset_stage_commit(stage, &def, rc);
 }
 
 #ifndef UNIT_TEST_DOCKER_SUPPORT
