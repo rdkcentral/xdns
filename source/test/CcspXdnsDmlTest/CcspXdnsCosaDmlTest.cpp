@@ -2081,6 +2081,8 @@ TEST_F(CcspXdnsCosaDmlTestFixture, XDNS_Commit_Failure)
     ASSERT_NE(g_pCosaBEManager->hXdns, nullptr);
 
     PCOSA_DATAMODEL_XDNS pMyObject = (PCOSA_DATAMODEL_XDNS)g_pCosaBEManager->hXdns;
+    memset(pMyObject, 0, sizeof(COSA_DATAMODEL_XDNS));
+    AnscSListInitializeHeader(&pMyObject->XDNSDeviceList);
 
     pMyObject->DefaultDeviceDnsIPv4Changed = TRUE;
     strcpy(pMyObject->DefaultDeviceDnsIPv4, "192.168.1.2");
@@ -2102,12 +2104,12 @@ TEST_F(CcspXdnsCosaDmlTestFixture, XDNS_Commit_Failure)
         .WillRepeatedly(Return(EOK));
 
     EXPECT_CALL(*g_securewrapperMock, v_secure_system(_, _))
-        .Times(4)
+        .Times(9)
         .WillRepeatedly(Return(0));
 
     EXPECT_CALL(*g_syscfgMock, syscfg_get(_, _, _, _))
-        .Times(1)
-        .WillOnce(Return(0));
+        .Times(6)
+        .WillRepeatedly(Return(0));
 
     ULONG result = XDNS_Commit(hInsContext);
 
@@ -2130,6 +2132,8 @@ TEST_F(CcspXdnsCosaDmlTestFixture, XDNS_Commit_sprintf_s_fails)
     ASSERT_NE(g_pCosaBEManager->hXdns, nullptr);
 
     PCOSA_DATAMODEL_XDNS pMyObject = (PCOSA_DATAMODEL_XDNS)g_pCosaBEManager->hXdns;
+    memset(pMyObject, 0, sizeof(COSA_DATAMODEL_XDNS));
+    AnscSListInitializeHeader(&pMyObject->XDNSDeviceList);
 
     pMyObject->DefaultDeviceDnsIPv4Changed = TRUE;
     strcpy(pMyObject->DefaultDeviceDnsIPv4, "192.168.1.2");
@@ -2151,12 +2155,12 @@ TEST_F(CcspXdnsCosaDmlTestFixture, XDNS_Commit_sprintf_s_fails)
         .WillRepeatedly(Return(-1));
 
     EXPECT_CALL(*g_securewrapperMock, v_secure_system(_, _))
-        .Times(4)
+        .Times(7)
         .WillRepeatedly(Return(-1));
 
     EXPECT_CALL(*g_syscfgMock, syscfg_get(_, _, _, _))
-        .Times(1)
-        .WillOnce(Return(0));
+        .Times(6)
+        .WillRepeatedly(Return(0));
 
     ULONG result = XDNS_Commit(hInsContext);
 
@@ -2180,6 +2184,8 @@ TEST_F(CcspXdnsCosaDmlTestFixture, XDNS_Commit_CoreNet)
     ASSERT_NE(g_pCosaBEManager->hXdns, nullptr);
 
     PCOSA_DATAMODEL_XDNS pMyObject = (PCOSA_DATAMODEL_XDNS)g_pCosaBEManager->hXdns;
+    memset(pMyObject, 0, sizeof(COSA_DATAMODEL_XDNS));
+    AnscSListInitializeHeader(&pMyObject->XDNSDeviceList);
 
     pMyObject->DefaultDeviceDnsIPv4Changed = TRUE;
     strcpy(pMyObject->DefaultDeviceDnsIPv4, "192.168.1.2");
@@ -2201,7 +2207,7 @@ TEST_F(CcspXdnsCosaDmlTestFixture, XDNS_Commit_CoreNet)
         .WillRepeatedly(Return(-1));
 
     EXPECT_CALL(*g_securewrapperMock, v_secure_system(_, _))
-        .Times(4)
+        .Times(7)
         .WillRepeatedly(Return(-1));
 
     EXPECT_CALL(*g_libnetMock, rule_add(_))
@@ -2209,8 +2215,8 @@ TEST_F(CcspXdnsCosaDmlTestFixture, XDNS_Commit_CoreNet)
         .WillRepeatedly(Return(CNL_STATUS_SUCCESS));
 
     EXPECT_CALL(*g_syscfgMock, syscfg_get(_, _, _, _))
-        .Times(1)
-        .WillOnce(Return(0));
+        .Times(6)
+        .WillRepeatedly(Return(0));
 
     ULONG result = XDNS_Commit(hInsContext);
 
@@ -2233,6 +2239,8 @@ TEST_F(CcspXdnsCosaDmlTestFixture, XDNS_Commit_CoreNet_Failure)
     ASSERT_NE(g_pCosaBEManager->hXdns, nullptr);
 
     PCOSA_DATAMODEL_XDNS pMyObject = (PCOSA_DATAMODEL_XDNS)g_pCosaBEManager->hXdns;
+    memset(pMyObject, 0, sizeof(COSA_DATAMODEL_XDNS));
+    AnscSListInitializeHeader(&pMyObject->XDNSDeviceList);
 
     pMyObject->DefaultDeviceDnsIPv4Changed = TRUE;
     strcpy(pMyObject->DefaultDeviceDnsIPv4, "192.168.1.2");
@@ -2254,7 +2262,7 @@ TEST_F(CcspXdnsCosaDmlTestFixture, XDNS_Commit_CoreNet_Failure)
         .WillRepeatedly(Return(-1));
 
     EXPECT_CALL(*g_securewrapperMock, v_secure_system(_, _))
-        .Times(4)
+        .Times(7)
         .WillRepeatedly(Return(-1));
 
     EXPECT_CALL(*g_libnetMock, rule_add(_))
@@ -2262,8 +2270,8 @@ TEST_F(CcspXdnsCosaDmlTestFixture, XDNS_Commit_CoreNet_Failure)
         .WillRepeatedly(Return(CNL_STATUS_FAILURE));
 
     EXPECT_CALL(*g_syscfgMock, syscfg_get(_, _, _, _))
-        .Times(1)
-        .WillOnce(Return(0));
+        .Times(6)
+        .WillRepeatedly(Return(0));
 
     ULONG result = XDNS_Commit(hInsContext);
 
@@ -2568,12 +2576,21 @@ TEST_F(CcspXdnsCosaDmlTestFixture, DNSMappingTable_DelEntry)
     PCOSA_DML_XDNS_MACDNS_MAPPING_ENTRY pDnsTableEntry = (PCOSA_DML_XDNS_MACDNS_MAPPING_ENTRY)malloc(sizeof(COSA_DML_XDNS_MACDNS_MAPPING_ENTRY));
     ASSERT_NE(pDnsTableEntry, nullptr);
 
+    strcpy(pDnsTableEntry->MacAddress, "00:11:22:33:44:55");
+
     PCOSA_CONTEXT_XDNS_LINK_OBJECT pXdnsCxtLink = (PCOSA_CONTEXT_XDNS_LINK_OBJECT)malloc(sizeof(COSA_CONTEXT_XDNS_LINK_OBJECT));
     ASSERT_NE(pXdnsCxtLink, nullptr);
 
     pXdnsCxtLink->hContext = (ANSC_HANDLE)pDnsTableEntry;
 
     ANSC_STATUS returnStatus = ANSC_STATUS_SUCCESS;
+
+    // A plain (unmasked) MAC is removed via ipset del, not a firewall restart.
+    EXPECT_CALL(*g_securewrapperMock, v_secure_system(_, _))
+        .WillRepeatedly(Return(0));
+
+    EXPECT_CALL(*g_syseventMock, sysevent_set(_, _, StrEq("firewall-restart"), _, _))
+        .Times(0);
 
     EXPECT_CALL(*g_anscWrapperApiMock, AnscSListPopEntryByLink(_, _))
         .Times(1);
@@ -2608,12 +2625,21 @@ TEST_F(CcspXdnsCosaDmlTestFixture, DNSMappingTable_DelEntry_Failure)
     PCOSA_DML_XDNS_MACDNS_MAPPING_ENTRY pDnsTableEntry = (PCOSA_DML_XDNS_MACDNS_MAPPING_ENTRY)malloc(sizeof(COSA_DML_XDNS_MACDNS_MAPPING_ENTRY));
     ASSERT_NE(pDnsTableEntry, nullptr);
 
+    strcpy(pDnsTableEntry->MacAddress, "00:11:22:33:44:55");
+
     PCOSA_CONTEXT_XDNS_LINK_OBJECT pXdnsCxtLink = (PCOSA_CONTEXT_XDNS_LINK_OBJECT)malloc(sizeof(COSA_CONTEXT_XDNS_LINK_OBJECT));
     ASSERT_NE(pXdnsCxtLink, nullptr);
 
     pXdnsCxtLink->hContext = (ANSC_HANDLE)pDnsTableEntry;
 
     ANSC_STATUS returnStatus = ANSC_STATUS_FAILURE;
+
+    // A plain (unmasked) MAC is removed via ipset del, not a firewall restart.
+    EXPECT_CALL(*g_securewrapperMock, v_secure_system(_, _))
+        .WillRepeatedly(Return(0));
+
+    EXPECT_CALL(*g_syseventMock, sysevent_set(_, _, StrEq("firewall-restart"), _, _))
+        .Times(0);
 
     EXPECT_CALL(*g_anscWrapperApiMock, AnscSListPopEntryByLink(_, _))
         .Times(1);
@@ -2648,12 +2674,21 @@ TEST_F(CcspXdnsCosaDmlTestFixture, DNSMappingTable_DelEntry_Failure2)
     PCOSA_DML_XDNS_MACDNS_MAPPING_ENTRY pDnsTableEntry = (PCOSA_DML_XDNS_MACDNS_MAPPING_ENTRY)malloc(sizeof(COSA_DML_XDNS_MACDNS_MAPPING_ENTRY));
     ASSERT_NE(pDnsTableEntry, nullptr);
 
+    strcpy(pDnsTableEntry->MacAddress, "00:11:22:33:44:55");
+
     PCOSA_CONTEXT_XDNS_LINK_OBJECT pXdnsCxtLink = (PCOSA_CONTEXT_XDNS_LINK_OBJECT)malloc(sizeof(COSA_CONTEXT_XDNS_LINK_OBJECT));
     ASSERT_NE(pXdnsCxtLink, nullptr);
 
     pXdnsCxtLink->hContext = (ANSC_HANDLE)pDnsTableEntry;
 
     ANSC_STATUS returnStatus = ANSC_STATUS_FAILURE;
+
+    // A plain (unmasked) MAC is removed via ipset del, not a firewall restart.
+    EXPECT_CALL(*g_securewrapperMock, v_secure_system(_, _))
+        .WillRepeatedly(Return(0));
+
+    EXPECT_CALL(*g_syseventMock, sysevent_set(_, _, StrEq("firewall-restart"), _, _))
+        .Times(0);
 
     EXPECT_CALL(*g_anscWrapperApiMock, AnscSListPopEntryByLink(_, _))
         .Times(1);
@@ -3921,6 +3956,16 @@ TEST_F(CcspXdnsCosaDmlTestFixture, DNSMappingTable_Rollback_condition)
 
 TEST_F(CcspXdnsCosaDmlTestFixture, DNSMappingTable_Commit)
 {
+    g_pCosaBEManager = (PCOSA_BACKEND_MANAGER_OBJECT)malloc(sizeof(COSA_BACKEND_MANAGER_OBJECT));
+    ASSERT_NE(g_pCosaBEManager, nullptr);
+
+    g_pCosaBEManager->hXdns = (PCOSA_DATAMODEL_XDNS)malloc(sizeof(COSA_DATAMODEL_XDNS));
+    ASSERT_NE(g_pCosaBEManager->hXdns, nullptr);
+
+    PCOSA_DATAMODEL_XDNS pXdns = (PCOSA_DATAMODEL_XDNS)g_pCosaBEManager->hXdns;
+    memset(pXdns, 0, sizeof(COSA_DATAMODEL_XDNS));
+    AnscSListInitializeHeader(&pXdns->XDNSDeviceList);
+
     PCOSA_CONTEXT_XDNS_LINK_OBJECT pXdnsCxtLink = (PCOSA_CONTEXT_XDNS_LINK_OBJECT)malloc(sizeof(COSA_CONTEXT_XDNS_LINK_OBJECT));
     ASSERT_NE(pXdnsCxtLink, nullptr);
 
@@ -3951,7 +3996,19 @@ TEST_F(CcspXdnsCosaDmlTestFixture, DNSMappingTable_Commit)
 
     EXPECT_CALL(*g_syscfgMock, syscfg_get(_, StrEq("X_RDKCENTRAL-COM_XDNS"), _, _))
         .Times(1)
-        .WillOnce(DoAll(testing::SetArrayArgument<2>(buf, buf + sizeof(buf)), Return(0)));
+        .WillOnce(DoAll(testing::SetArrayArgument<2>(buf, buf + 1), Return(0)));
+
+    EXPECT_CALL(*g_syscfgMock, syscfg_get(_, StrEq("XDNS_GlobalRedirect"), _, _))
+        .Times(2)
+        .WillRepeatedly(Return(0));
+
+    EXPECT_CALL(*g_syscfgMock, syscfg_set_nns_commit(StrEq("XDNS_GlobalRedirect"), _))
+        .Times(1)
+        .WillOnce(Return(0));
+
+    // A plain (unmasked) MAC add/change updates ipset directly, not a restart.
+    EXPECT_CALL(*g_syseventMock, sysevent_set(_, _, StrEq("firewall-restart"), _, _))
+        .Times(0);
 
     ULONG result = DNSMappingTable_Commit((ANSC_HANDLE)pXdnsCxtLink);
 
@@ -3961,10 +4018,22 @@ TEST_F(CcspXdnsCosaDmlTestFixture, DNSMappingTable_Commit)
     pDnsTableEntry = NULL;
     free(pXdnsCxtLink);
     pXdnsCxtLink = NULL;
+    free(g_pCosaBEManager->hXdns);
+    g_pCosaBEManager->hXdns = NULL;
+    free(g_pCosaBEManager);
+    g_pCosaBEManager = NULL;
 }
 
 TEST_F(CcspXdnsCosaDmlTestFixture, DNSMappingTable_Commit_v_secure_system_true)
 {
+    g_pCosaBEManager = (PCOSA_BACKEND_MANAGER_OBJECT)malloc(sizeof(COSA_BACKEND_MANAGER_OBJECT));
+    ASSERT_NE(g_pCosaBEManager, nullptr);
+
+    g_pCosaBEManager->hXdns = (PCOSA_DATAMODEL_XDNS)malloc(sizeof(COSA_DATAMODEL_XDNS));
+    ASSERT_NE(g_pCosaBEManager->hXdns, nullptr);
+    memset(g_pCosaBEManager->hXdns, 0, sizeof(COSA_DATAMODEL_XDNS));
+    AnscSListInitializeHeader(&((PCOSA_DATAMODEL_XDNS)g_pCosaBEManager->hXdns)->XDNSDeviceList);
+
     PCOSA_CONTEXT_XDNS_LINK_OBJECT pXdnsCxtLink = (PCOSA_CONTEXT_XDNS_LINK_OBJECT)malloc(sizeof(COSA_CONTEXT_XDNS_LINK_OBJECT));
     ASSERT_NE(pXdnsCxtLink, nullptr);
 
@@ -3995,7 +4064,19 @@ TEST_F(CcspXdnsCosaDmlTestFixture, DNSMappingTable_Commit_v_secure_system_true)
 
     EXPECT_CALL(*g_syscfgMock, syscfg_get(_, StrEq("X_RDKCENTRAL-COM_XDNS"), _, _))
         .Times(1)
-        .WillOnce(DoAll(testing::SetArrayArgument<2>(buf, buf + sizeof(buf)), Return(0)));
+        .WillOnce(DoAll(testing::SetArrayArgument<2>(buf, buf + 1), Return(0)));
+
+    EXPECT_CALL(*g_syscfgMock, syscfg_get(_, StrEq("XDNS_GlobalRedirect"), _, _))
+        .Times(2)
+        .WillRepeatedly(Return(0));
+
+    EXPECT_CALL(*g_syscfgMock, syscfg_set_nns_commit(StrEq("XDNS_GlobalRedirect"), _))
+        .Times(1)
+        .WillOnce(Return(0));
+
+    // A plain (unmasked) MAC add/change updates ipset directly, not a restart.
+    EXPECT_CALL(*g_syseventMock, sysevent_set(_, _, StrEq("firewall-restart"), _, _))
+        .Times(0);
 
     ULONG result = DNSMappingTable_Commit((ANSC_HANDLE)pXdnsCxtLink);
 
@@ -4005,10 +4086,22 @@ TEST_F(CcspXdnsCosaDmlTestFixture, DNSMappingTable_Commit_v_secure_system_true)
     pDnsTableEntry = NULL;
     free(pXdnsCxtLink);
     pXdnsCxtLink = NULL;
+    free(g_pCosaBEManager->hXdns);
+    g_pCosaBEManager->hXdns = NULL;
+    free(g_pCosaBEManager);
+    g_pCosaBEManager = NULL;
 }
 
 TEST_F(CcspXdnsCosaDmlTestFixture, DNSMappingTable_Commit_v_secure_system_true2)
 {
+    g_pCosaBEManager = (PCOSA_BACKEND_MANAGER_OBJECT)malloc(sizeof(COSA_BACKEND_MANAGER_OBJECT));
+    ASSERT_NE(g_pCosaBEManager, nullptr);
+
+    g_pCosaBEManager->hXdns = (PCOSA_DATAMODEL_XDNS)malloc(sizeof(COSA_DATAMODEL_XDNS));
+    ASSERT_NE(g_pCosaBEManager->hXdns, nullptr);
+    memset(g_pCosaBEManager->hXdns, 0, sizeof(COSA_DATAMODEL_XDNS));
+    AnscSListInitializeHeader(&((PCOSA_DATAMODEL_XDNS)g_pCosaBEManager->hXdns)->XDNSDeviceList);
+
     PCOSA_CONTEXT_XDNS_LINK_OBJECT pXdnsCxtLink = (PCOSA_CONTEXT_XDNS_LINK_OBJECT)malloc(sizeof(COSA_CONTEXT_XDNS_LINK_OBJECT));
     ASSERT_NE(pXdnsCxtLink, nullptr);
 
@@ -4039,7 +4132,19 @@ TEST_F(CcspXdnsCosaDmlTestFixture, DNSMappingTable_Commit_v_secure_system_true2)
 
     EXPECT_CALL(*g_syscfgMock, syscfg_get(_, StrEq("X_RDKCENTRAL-COM_XDNS"), _, _))
         .Times(1)
-        .WillOnce(DoAll(testing::SetArrayArgument<2>(buf, buf + sizeof(buf)), Return(0)));
+        .WillOnce(DoAll(testing::SetArrayArgument<2>(buf, buf + 1), Return(0)));
+
+    EXPECT_CALL(*g_syscfgMock, syscfg_get(_, StrEq("XDNS_GlobalRedirect"), _, _))
+        .Times(2)
+        .WillRepeatedly(Return(0));
+
+    EXPECT_CALL(*g_syscfgMock, syscfg_set_nns_commit(StrEq("XDNS_GlobalRedirect"), _))
+        .Times(1)
+        .WillOnce(Return(0));
+
+    // A plain (unmasked) MAC add/change updates ipset directly, not a restart.
+    EXPECT_CALL(*g_syseventMock, sysevent_set(_, _, StrEq("firewall-restart"), _, _))
+        .Times(0);
 
     ULONG result = DNSMappingTable_Commit((ANSC_HANDLE)pXdnsCxtLink);
 
@@ -4049,11 +4154,23 @@ TEST_F(CcspXdnsCosaDmlTestFixture, DNSMappingTable_Commit_v_secure_system_true2)
     pDnsTableEntry = NULL;
     free(pXdnsCxtLink);
     pXdnsCxtLink = NULL;
+    free(g_pCosaBEManager->hXdns);
+    g_pCosaBEManager->hXdns = NULL;
+    free(g_pCosaBEManager);
+    g_pCosaBEManager = NULL;
 }
 
 #ifdef CORE_NET_LIB
 TEST_F(CcspXdnsCosaDmlTestFixture, DNSMappingTable_Commit_CoreNet)
 {
+    g_pCosaBEManager = (PCOSA_BACKEND_MANAGER_OBJECT)malloc(sizeof(COSA_BACKEND_MANAGER_OBJECT));
+    ASSERT_NE(g_pCosaBEManager, nullptr);
+
+    g_pCosaBEManager->hXdns = (PCOSA_DATAMODEL_XDNS)malloc(sizeof(COSA_DATAMODEL_XDNS));
+    ASSERT_NE(g_pCosaBEManager->hXdns, nullptr);
+    memset(g_pCosaBEManager->hXdns, 0, sizeof(COSA_DATAMODEL_XDNS));
+    AnscSListInitializeHeader(&((PCOSA_DATAMODEL_XDNS)g_pCosaBEManager->hXdns)->XDNSDeviceList);
+
     PCOSA_CONTEXT_XDNS_LINK_OBJECT pXdnsCxtLink = (PCOSA_CONTEXT_XDNS_LINK_OBJECT)malloc(sizeof(COSA_CONTEXT_XDNS_LINK_OBJECT));
     ASSERT_NE(pXdnsCxtLink, nullptr);
 
@@ -4088,7 +4205,19 @@ TEST_F(CcspXdnsCosaDmlTestFixture, DNSMappingTable_Commit_CoreNet)
 
     EXPECT_CALL(*g_syscfgMock, syscfg_get(_, StrEq("X_RDKCENTRAL-COM_XDNS"), _, _))
         .Times(1)
-        .WillOnce(DoAll(testing::SetArrayArgument<2>(buf, buf + sizeof(buf)), Return(0)));
+        .WillOnce(DoAll(testing::SetArrayArgument<2>(buf, buf + 1), Return(0)));
+
+    EXPECT_CALL(*g_syscfgMock, syscfg_get(_, StrEq("XDNS_GlobalRedirect"), _, _))
+        .Times(2)
+        .WillRepeatedly(Return(0));
+
+    EXPECT_CALL(*g_syscfgMock, syscfg_set_nns_commit(StrEq("XDNS_GlobalRedirect"), _))
+        .Times(1)
+        .WillOnce(Return(0));
+
+    // A plain MAC only refreshes the ipset (even when that fails); no restart.
+    EXPECT_CALL(*g_syseventMock, sysevent_set(_, _, StrEq("firewall-restart"), _, _))
+        .Times(0);
 
     ULONG result = DNSMappingTable_Commit((ANSC_HANDLE)pXdnsCxtLink);
 
@@ -4098,10 +4227,22 @@ TEST_F(CcspXdnsCosaDmlTestFixture, DNSMappingTable_Commit_CoreNet)
     pDnsTableEntry = NULL;
     free(pXdnsCxtLink);
     pXdnsCxtLink = NULL;
+    free(g_pCosaBEManager->hXdns);
+    g_pCosaBEManager->hXdns = NULL;
+    free(g_pCosaBEManager);
+    g_pCosaBEManager = NULL;
 }
 
 TEST_F(CcspXdnsCosaDmlTestFixture, DNSMappingTable_Commit_CoreNet_Failure)
 {
+    g_pCosaBEManager = (PCOSA_BACKEND_MANAGER_OBJECT)malloc(sizeof(COSA_BACKEND_MANAGER_OBJECT));
+    ASSERT_NE(g_pCosaBEManager, nullptr);
+
+    g_pCosaBEManager->hXdns = (PCOSA_DATAMODEL_XDNS)malloc(sizeof(COSA_DATAMODEL_XDNS));
+    ASSERT_NE(g_pCosaBEManager->hXdns, nullptr);
+    memset(g_pCosaBEManager->hXdns, 0, sizeof(COSA_DATAMODEL_XDNS));
+    AnscSListInitializeHeader(&((PCOSA_DATAMODEL_XDNS)g_pCosaBEManager->hXdns)->XDNSDeviceList);
+
     PCOSA_CONTEXT_XDNS_LINK_OBJECT pXdnsCxtLink = (PCOSA_CONTEXT_XDNS_LINK_OBJECT)malloc(sizeof(COSA_CONTEXT_XDNS_LINK_OBJECT));
     ASSERT_NE(pXdnsCxtLink, nullptr);
 
@@ -4136,7 +4277,19 @@ TEST_F(CcspXdnsCosaDmlTestFixture, DNSMappingTable_Commit_CoreNet_Failure)
 
     EXPECT_CALL(*g_syscfgMock, syscfg_get(_, StrEq("X_RDKCENTRAL-COM_XDNS"), _, _))
         .Times(1)
-        .WillOnce(DoAll(testing::SetArrayArgument<2>(buf, buf + sizeof(buf)), Return(0)));
+        .WillOnce(DoAll(testing::SetArrayArgument<2>(buf, buf + 1), Return(0)));
+
+    EXPECT_CALL(*g_syscfgMock, syscfg_get(_, StrEq("XDNS_GlobalRedirect"), _, _))
+        .Times(2)
+        .WillRepeatedly(Return(0));
+
+    EXPECT_CALL(*g_syscfgMock, syscfg_set_nns_commit(StrEq("XDNS_GlobalRedirect"), _))
+        .Times(1)
+        .WillOnce(Return(0));
+
+    // A plain MAC only refreshes the ipset (even when that fails); no restart.
+    EXPECT_CALL(*g_syseventMock, sysevent_set(_, _, StrEq("firewall-restart"), _, _))
+        .Times(0);
 
     ULONG result = DNSMappingTable_Commit((ANSC_HANDLE)pXdnsCxtLink);
 
@@ -4146,6 +4299,10 @@ TEST_F(CcspXdnsCosaDmlTestFixture, DNSMappingTable_Commit_CoreNet_Failure)
     pDnsTableEntry = NULL;
     free(pXdnsCxtLink);
     pXdnsCxtLink = NULL;
+    free(g_pCosaBEManager->hXdns);
+    g_pCosaBEManager->hXdns = NULL;
+    free(g_pCosaBEManager);
+    g_pCosaBEManager = NULL;
 }
 #endif
 

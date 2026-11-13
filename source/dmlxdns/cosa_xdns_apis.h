@@ -25,6 +25,10 @@
 #define DNSMASQ_SERVERS_CONF "/nvram/dnsmasq_servers.conf"
 #define DNSMASQ_SERVERS_BAK "/nvram/dnsmasq_servers.bak"
 
+/* The firewall creates the set and matches it; xdns owns its members */
+#define XDNS_IPSET "xdns_clients"
+#define XDNS_CACHE_SIZE_MAX 256
+
 #define MAX_BUF_SIZE 256
 #define MAX_XDNS_SERV 2
 //mandate Dual stack by turning on this
@@ -156,6 +160,19 @@ void ReplaceDnsmasqConfEntry(char* macaddress, char (*overrideEntry)[MAX_BUF_SIZ
 void ResetDnsmasqConfFile();
 void AppendDnsmasqConfEntry(char (*string1)[MAX_BUF_SIZE], int count);
 void RemoveDnsmasqConfEntry(char* macaddress);
+
+int xdns_sync_ipset_dm(ANSC_HANDLE hXdns);
+int xdns_ipset_stage_begin(char *stage, size_t stage_len);
+int xdns_ipset_add_mac(const char *stage, const char *mac);
+
+/* The default/unmatched client's DNS settings, used to decide global redirect. */
+typedef struct
+{
+    const char *v4;
+    const char *v6;
+} xdns_default_dns_t;
+
+int xdns_ipset_stage_commit(const char *stage, const xdns_default_dns_t *def, int rc);
 void RefreshResolvConfEntry();
 int SetXdnsConfig();
 int UnsetXdnsConfig();

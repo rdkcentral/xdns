@@ -84,6 +84,140 @@ extern ANSC_HANDLE bus_handle;
 
 #define BUF_LEN (10 * (sizeof(struct inotify_event) + NAME_MAX + 1))
 
+/* 1 if 'dns' is a real XDNS override (not the LAN dnsmasq server). Checks
+ * IPv4 via syscfg lan_ipaddr and IPv6 via sysevent lan_ipaddr_v6, using a
+ * private sysevent connection (the shared sysevent_fd/sysEtoken belong to
+ * the async notification thread and aren't safe to reuse here). If v6
+ * lookup is unavailable (e.g. early boot), falls back to the last
+ * persisted XDNS_GlobalRedirect value instead of assuming override. */
+static int xdns_default_is_override(const char *dns)
+{
+    char lan_ip[64] = {0};
+    int fd;
+    token_t token;
+    int got_v6 = 0;
+
+    if (dns == NULL || dns[0] == '\0')
+        return 0;
+
+    if (syscfg_get(NULL, "lan_ipaddr", lan_ip, sizeof(lan_ip)) == 0 &&
+        lan_ip[0] != '\0' && 0 == strcasecmp(dns, lan_ip))
+    {
+        return 0;
+    }
+
+    if (strchr(dns, ':') == NULL)
+    {
+        return 1;  /* IPv4-shaped and didn't match lan_ipaddr above */
+    }
+
+    lan_ip[0] = '\0';
+    fd = sysevent_open("127.0.0.1", SE_SERVER_WELL_KNOWN_PORT, SE_VERSION, "xdns_override_check", &token);
+    if (fd >= 0)
+    {
+        got_v6 = (sysevent_get(fd, token, "lan_ipaddr_v6", lan_ip, sizeof(lan_ip)) == 0 && lan_ip[0] != '\0');
+        if (got_v6 && 0 == strcasecmp(dns, lan_ip))
+        {
+            sysevent_close(fd, token);
+            return 0;
+        }
+        sysevent_close(fd, token);
+    }
+
+    if (!got_v6)
+    {
+        char last[8] = {0};
+        if (syscfg_get(NULL, "XDNS_GlobalRedirect", last, sizeof(last)) == 0 && strcmp(last, "0") == 0)
+        {
+            return 0;
+        }
+    }
+
+    return 1;
+}
+
+/* Creates the staging ipset and returns its name in 'stage'. Returns 0 on success. */
+int xdns_ipset_stage_begin(char *stage, size_t stage_len)
+{
+    snprintf(stage, stage_len, "%s_new", XDNS_IPSET);
+    v_secure_system("ipset -! destroy %s", stage);
+    return v_secure_system("ipset -! create %s hash:mac", stage);
+}
+
+/* Adds one MAC to 'stage'. The all-zero MAC is the default entry, not a client.
+ * Returns 0 on success (including no-op for empty/default). */
+int xdns_ipset_add_mac(const char *stage, const char *mac)
+{
+    if (mac == NULL || mac[0] == '\0' || 0 == strcmp(mac, "00:00:00:00:00:00"))
+    {
+        return 0;
+    }
+
+    return v_secure_system("ipset -! add %s %s", stage, mac);
+}
+
+/* Moves 'stage' into XDNS_IPSET via an atomic swap and writes XDNS_GlobalRedirect.
+ * Global redirect applies when 'rc' indicates a failure or the default entry
+ * is an override. Returns 0 on success. */
+int xdns_ipset_stage_commit(const char *stage, const xdns_default_dns_t *def, int rc)
+{
+    int global_redirect = 0;
+
+    if (xdns_default_is_override(def->v4) || xdns_default_is_override(def->v6))
+    {
+        global_redirect = 1;
+    }
+
+    if (rc == 0)
+    {
+        rc = v_secure_system("ipset -! create %s hash:mac", XDNS_IPSET);
+    }
+    if (rc == 0)
+    {
+        rc = v_secure_system("ipset -! swap %s %s", stage, XDNS_IPSET);
+    }
+    v_secure_system("ipset -! destroy %s", stage);
+
+    if (syscfg_set_commit(NULL, "XDNS_GlobalRedirect", (rc != 0 || global_redirect) ? "1" : "0") != 0)
+    {
+        CcspTraceError(("%s: syscfg_set_commit XDNS_GlobalRedirect failed\n", __FUNCTION__));
+        rc = -1;
+    }
+
+    if (rc != 0)
+    {
+        CcspTraceError(("%s: failed to update ipset %s\n", __FUNCTION__, XDNS_IPSET));
+    }
+    return rc;
+}
+
+/* Builds the ipset directly from the in-memory DM list via the staging primitives.
+ * Takes the handle explicitly (not g_pCosaBEManager->hXdns) since it also
+ * runs during CosaXDNSInitialize(), before that global is assigned. */
+int xdns_sync_ipset_dm(ANSC_HANDLE hXdns)
+{
+    PCOSA_DATAMODEL_XDNS pMyObject = (PCOSA_DATAMODEL_XDNS)hXdns;
+    PSINGLE_LINK_ENTRY pSListEntry;
+    char stage[64];
+    int count = 0;
+    int rc = xdns_ipset_stage_begin(stage, sizeof(stage));
+
+    pSListEntry = AnscSListGetFirstEntry(&pMyObject->XDNSDeviceList);
+    while (rc == 0 && pSListEntry != NULL && count < XDNS_CACHE_SIZE_MAX)
+    {
+        PCOSA_CONTEXT_XDNS_LINK_OBJECT pCxtLink = ACCESS_COSA_CONTEXT_XDNS_LINK_OBJECT(pSListEntry);
+        PCOSA_DML_XDNS_MACDNS_MAPPING_ENTRY pEntry = (PCOSA_DML_XDNS_MACDNS_MAPPING_ENTRY)pCxtLink->hContext;
+
+        rc = xdns_ipset_add_mac(stage, pEntry->MacAddress);
+        count++;
+
+        pSListEntry = AnscSListGetNextEntry(pSListEntry);
+    }
+
+    xdns_default_dns_t def = { pMyObject->DefaultDeviceDnsIPv4, pMyObject->DefaultDeviceDnsIPv6 };
+    return xdns_ipset_stage_commit(stage, &def, rc);
+}
+
 #ifndef UNIT_TEST_DOCKER_SUPPORT
     #define STATIC static
 #else
@@ -1516,6 +1650,10 @@ CosaXDNSInitialize
         return ANSC_STATUS_FAILURE;
     }
 #endif //WAN_FAILOVER_SUPPORTED
+#ifndef UNIT_TEST_DOCKER_SUPPORT
+    // The set is lost on reboot and only xdns fills it.
+    xdns_sync_ipset_dm((ANSC_HANDLE)pMyObject);
+#endif
     ret = rbusEvent_Subscribe(handle, "Device.X_RDK_WanManager.CurrentActiveDNS", eventReceiveHandler, NULL, 0);
     if(ret != RBUS_ERROR_SUCCESS)
     {

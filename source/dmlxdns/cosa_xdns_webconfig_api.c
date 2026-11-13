@@ -570,12 +570,15 @@ int apply_XDNS_cache_ToDB(xdns_cache *tmp_xdns_cache)
 	char Entry[DATA_BLOCK_SIZE]={0};
 	char* def_mac= "00:00:00:00:00:00";
 	char buf[DATA_BLOCK_SIZE]={0};
+	char oldFlag[2]={0};
+	char newFlag[2]={0};
 	FILE *fp1 =NULL;
 	int i;
 	errno_t rc = -1;
 
 	fprintf(stderr, "%s Entered !!!\n",__FUNCTION__);
 
+	syscfg_get(NULL, "XDNS_GlobalRedirect", oldFlag, sizeof(oldFlag));
 	fp1 = fopen(DNSMASQ_SERVERS_CONF, "w");
 	if(fp1 == NULL)
 	{
@@ -589,6 +592,8 @@ int apply_XDNS_cache_ToDB(xdns_cache *tmp_xdns_cache)
 	}
 	fprintf(fp1, "%s", Entry);
 
+	char stage[64];
+	int sync_rc = xdns_ipset_stage_begin(stage, sizeof(stage));
         for(i=0;i<(tmp_xdns_cache->Tablecount);i++)
         {
 		memset(Entry,0, sizeof(Entry));
@@ -597,16 +602,29 @@ int apply_XDNS_cache_ToDB(xdns_cache *tmp_xdns_cache)
 		if(rc < EOK) {
 		     ERR_CHK(rc);
 		}
+		if (sync_rc == 0)
+		{
+			sync_rc = xdns_ipset_add_mac(stage, tmp_xdns_cache->XDNSTableList[i].MacAddress);
+		}
 	fprintf(fp1, "%s", Entry);
         }
 
 	fclose(fp1);
+	xdns_default_dns_t def = { tmp_xdns_cache->DefaultDeviceDnsIPv4, tmp_xdns_cache->DefaultDeviceDnsIPv6 };
+	xdns_ipset_stage_commit(stage, &def, sync_rc);
+	syscfg_get(NULL, "XDNS_GlobalRedirect", newFlag, sizeof(newFlag));
 
 	syscfg_get( NULL, "X_RDKCENTRAL-COM_XDNS", buf, sizeof(buf));
 	int var=atoi(buf);
     	if( tmp_xdns_cache->XdnsEnable == var)
     	{
 		fprintf(stderr, "%s blob and DB XDNS ENABLE falg are same %d !!!\n",__FUNCTION__,tmp_xdns_cache->XdnsEnable);
+		// Enable state unchanged: restart only if the global-redirect
+		// decision flipped (default entry changed).
+		if (var && 0 != strcmp(oldFlag, newFlag))
+		{
+			commonSyseventSet("firewall-restart", "");
+		}
 	}
 	else
 	{
