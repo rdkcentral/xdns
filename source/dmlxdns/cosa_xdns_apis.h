@@ -27,7 +27,6 @@
 
 /* The firewall creates the set and matches it; xdns owns its members */
 #define XDNS_IPSET "xdns_clients"
-#define XDNS_DEFAULT_TAG "empty"
 #define XDNS_CACHE_SIZE_MAX 256
 
 #define MAX_BUF_SIZE 256
@@ -171,7 +170,6 @@ typedef struct
 {
     const char *v4;
     const char *v6;
-    const char *tag;
 } xdns_default_dns_t;
 
 int xdns_ipset_stage_commit(const char *stage, const xdns_default_dns_t *def, int rc);

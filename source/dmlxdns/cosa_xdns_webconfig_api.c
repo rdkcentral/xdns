@@ -610,8 +610,7 @@ int apply_XDNS_cache_ToDB(xdns_cache *tmp_xdns_cache)
         }
 
 	fclose(fp1);
-	xdns_default_dns_t def = { tmp_xdns_cache->DefaultDeviceDnsIPv4, tmp_xdns_cache->DefaultDeviceDnsIPv6,
-	                            tmp_xdns_cache->DefaultDeviceTag };
+	xdns_default_dns_t def = { tmp_xdns_cache->DefaultDeviceDnsIPv4, tmp_xdns_cache->DefaultDeviceDnsIPv6 };
 	xdns_ipset_stage_commit(stage, &def, sync_rc);
 	syscfg_get(NULL, "XDNS_GlobalRedirect", newFlag, sizeof(newFlag));
 

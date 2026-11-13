@@ -144,10 +144,11 @@ int xdns_ipset_stage_begin(char *stage, size_t stage_len)
     return v_secure_system("ipset -! create %s hash:mac", stage);
 }
 
-/* Adds one MAC to 'stage'. Returns 0 on success (including no-op for empty). */
+/* Adds one MAC to 'stage'. The all-zero MAC is the default entry, not a client.
+ * Returns 0 on success (including no-op for empty/default). */
 int xdns_ipset_add_mac(const char *stage, const char *mac)
 {
-    if (mac == NULL || mac[0] == '\0')
+    if (mac == NULL || mac[0] == '\0' || 0 == strcmp(mac, "00:00:00:00:00:00"))
     {
         return 0;
     }
@@ -156,14 +157,13 @@ int xdns_ipset_add_mac(const char *stage, const char *mac)
 }
 
 /* Moves 'stage' into XDNS_IPSET via an atomic swap and writes XDNS_GlobalRedirect.
- * Global redirect applies when 'rc' indicates a failure, the default entry is
- * an override, or it has a non-default tag. Returns 0 on success. */
+ * Global redirect applies when 'rc' indicates a failure or the default entry
+ * is an override. Returns 0 on success. */
 int xdns_ipset_stage_commit(const char *stage, const xdns_default_dns_t *def, int rc)
 {
     int global_redirect = 0;
 
-    if ((def->tag != NULL && 0 != strcmp(def->tag, XDNS_DEFAULT_TAG)) ||
-        xdns_default_is_override(def->v4) || xdns_default_is_override(def->v6))
+    if (xdns_default_is_override(def->v4) || xdns_default_is_override(def->v6))
     {
         global_redirect = 1;
     }
@@ -214,8 +214,7 @@ int xdns_sync_ipset_dm(ANSC_HANDLE hXdns)
         pSListEntry = AnscSListGetNextEntry(pSListEntry);
     }
 
-    xdns_default_dns_t def = { pMyObject->DefaultDeviceDnsIPv4, pMyObject->DefaultDeviceDnsIPv6,
-                                pMyObject->DefaultDeviceTag };
+    xdns_default_dns_t def = { pMyObject->DefaultDeviceDnsIPv4, pMyObject->DefaultDeviceDnsIPv6 };
     return xdns_ipset_stage_commit(stage, &def, rc);
 }
 
