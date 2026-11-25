@@ -97,13 +97,53 @@ static int xdns_ip_equal(const char *a, const char *b)
     return 0 == strcasecmp(a, b);
 }
 
-/* 1 if 'dns' is a real XDNS override (not the LAN dnsmasq server). Checks
- * IPv4 via syscfg lan_ipaddr and IPv6 via sysevent lan_ipaddr_v6, using a
- * private sysevent connection (the shared sysevent_fd/sysEtoken belong to
- * the async notification thread and aren't safe to reuse here). If v6
- * lookup is unavailable (e.g. early boot), falls back to the last
- * persisted XDNS_GlobalRedirect value instead of assuming override. */
-static int xdns_default_is_override(const char *dns)
+#define XDNS_WAN_DNS_DM "Device.X_RDK_WanManager.CurrentActiveDNS"
+
+static void xdns_get_wan_dns(char *buf, size_t len)
+{
+    rbusHandle_t handle;
+    rbusValue_t value = NULL;
+
+    buf[0] = '\0';
+    if (rbus_open(&handle, "XDNSWanDnsQuery") != RBUS_ERROR_SUCCESS)
+    {
+        return;
+    }
+    if (rbus_get(handle, XDNS_WAN_DNS_DM, &value) == RBUS_ERROR_SUCCESS)
+    {
+        const char *str = rbusValue_GetString(value, NULL);
+        if (str != NULL)
+        {
+            snprintf(buf, len, "%s", str);
+        }
+        rbusValue_Release(value);
+    }
+    rbus_close(handle);
+}
+
+static int xdns_in_dns_list(const char *dns, const char *list)
+{
+    char copy[256];
+    char *save = NULL;
+    char *tok;
+
+    snprintf(copy, sizeof(copy), "%s", list);
+    for (tok = strtok_r(copy, ", ", &save); tok != NULL; tok = strtok_r(NULL, ", ", &save))
+    {
+        if (xdns_ip_equal(dns, tok))
+        {
+            return 1;
+        }
+    }
+    return 0;
+}
+
+/* 1 if 'dns' is a real XDNS override: not the LAN dnsmasq address and not one
+ * of the WAN DNS servers in 'wan_dns'. LAN IPv4 comes from syscfg, LAN IPv6
+ * from sysevent over a private connection (the shared sysevent_fd belongs to
+ * the notification thread). If the IPv6 lookup fails, falls back to the last
+ * persisted XDNS_GlobalRedirect value. */
+static int xdns_default_is_override(const char *dns, int is_v6, const char *wan_dns)
 {
     char lan_ip[64] = {0};
     int fd;
@@ -113,28 +153,22 @@ static int xdns_default_is_override(const char *dns)
     if (dns == NULL || dns[0] == '\0')
         return 0;
 
-    if (syscfg_get(NULL, "lan_ipaddr", lan_ip, sizeof(lan_ip)) == 0 &&
-        lan_ip[0] != '\0' && xdns_ip_equal(dns, lan_ip))
-    {
+    if (xdns_in_dns_list(dns, wan_dns))
         return 0;
-    }
 
-    if (strchr(dns, ':') == NULL)
+    if (!is_v6)
     {
-        return 1;  /* IPv4-shaped and didn't match lan_ipaddr above */
+        return !(syscfg_get(NULL, "lan_ipaddr", lan_ip, sizeof(lan_ip)) == 0 &&
+                 lan_ip[0] != '\0' && xdns_ip_equal(dns, lan_ip));
     }
 
-    lan_ip[0] = '\0';
     fd = sysevent_open("127.0.0.1", SE_SERVER_WELL_KNOWN_PORT, SE_VERSION, "xdns_override_check", &token);
     if (fd >= 0)
     {
         got_v6 = (sysevent_get(fd, token, "lan_ipaddr_v6", lan_ip, sizeof(lan_ip)) == 0 && lan_ip[0] != '\0');
-        if (got_v6 && xdns_ip_equal(dns, lan_ip))
-        {
-            sysevent_close(fd, token);
-            return 0;
-        }
         sysevent_close(fd, token);
+        if (got_v6 && xdns_ip_equal(dns, lan_ip))
+            return 0;
     }
 
     if (!got_v6)
@@ -148,7 +182,6 @@ static int xdns_default_is_override(const char *dns)
 
     return 1;
 }
-
 /* Creates the staging ipset and returns its name in 'stage'. Returns 0 on success. */
 int xdns_ipset_stage_begin(char *stage, size_t stage_len)
 {
@@ -176,7 +209,10 @@ int xdns_ipset_stage_commit(const char *stage, const xdns_default_dns_t *def, in
 {
     int global_redirect = 0;
 
-    if (xdns_default_is_override(def->v4) || xdns_default_is_override(def->v6))
+    char wan_dns[256];
+
+    xdns_get_wan_dns(wan_dns, sizeof(wan_dns));
+    if (xdns_default_is_override(def->v4, 0, wan_dns) || xdns_default_is_override(def->v6, 1, wan_dns))
     {
         global_redirect = 1;
     }
