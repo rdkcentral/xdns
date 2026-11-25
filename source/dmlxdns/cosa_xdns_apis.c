@@ -128,7 +128,7 @@ static int xdns_in_dns_list(const char *dns, const char *list)
     char *tok;
 
     snprintf(copy, sizeof(copy), "%s", list);
-    for (tok = strtok_r(copy, ", ", &save); tok != NULL; tok = strtok_r(NULL, ", ", &save))
+    for (tok = strtok_r(copy, ",", &save); tok != NULL; tok = strtok_r(NULL, ",", &save))
     {
         if (xdns_ip_equal(dns, tok))
         {
